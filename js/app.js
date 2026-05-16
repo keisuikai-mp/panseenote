@@ -52,6 +52,7 @@
     selectedTransferDevice: "",
     selectedTransferMode: "",
     transferLastCreated: null,
+    transferSaveError: "",
   };
 
   var DEVICE_TRANSFER_MODES = [
@@ -990,6 +991,79 @@
       : [String(deviceDef.receiveStep || "")];
   }
 
+  function buildDeviceTransferSendGuideSections(deviceDef) {
+    var guideSections = [];
+    var info = state.transferLastCreated;
+    if (info && state.selectedTransferMode === "send") {
+      guideSections.push({
+        title: "保存したファイル",
+        rows: [
+          ["ファイル名", info.fileName],
+          ["保存場所", info.locationLabel],
+          ["作成日時", formatIsoDisplay(info.createdAt)],
+        ],
+      });
+    } else {
+      var saveBody =
+        "送信するデータを保存します。既に保存されているデータファイルを送信する場合には、新たにファイルを保存する必要はありません。";
+      if (state.transferSaveError) {
+        saveBody += "\n\n" + state.transferSaveError;
+      }
+      guideSections.push({
+        title: "ファイルを保存する",
+        body: saveBody,
+        actionId: "save-transfer-file",
+        actionLabel: "データファイル保存",
+        actionClassName: "app-dialog-btn btn-action-green app-dialog-section-action",
+      });
+    }
+    guideSections.push({
+      title: "今後の手順",
+      steps: buildTransferSendNextStep(deviceDef, info && info.fileName),
+    });
+    var minimumSection = getTransferMinimumSection(deviceDef);
+    if (minimumSection) {
+      guideSections.push(minimumSection);
+    }
+    return guideSections;
+  }
+
+  function saveDeviceTransferFile(deviceDef) {
+    if (!deviceDef || state.exportBusy || state.importBusy) return Promise.resolve(null);
+    state.transferSaveError = "";
+    setDataTransferBusyUi("export", true);
+    return buildBackupFilePayload()
+      .then(function (pkg) {
+        return downloadBackupFileForTransfer(pkg.blob, pkg.name).then(function (result) {
+          result.createdAt = new Date().toISOString();
+          return result;
+        });
+      })
+      .then(function (result) {
+        if (!result) return null;
+        var locationLabel = deviceDef.downloadLabel || "ダウンロード";
+        state.transferLastCreated = {
+          fileName: result.fileLabel,
+          locationLabel: locationLabel,
+          createdAt: result.createdAt,
+          nextStep: buildTransferSendNextStep(deviceDef, result.fileLabel),
+        };
+        state.transferSaveError = "";
+        renderDeviceTransferResult();
+        return persistBackupExportInfo(result.fileLabel).then(function () {
+          return result;
+        });
+      })
+      .catch(function (err) {
+        console.error("Device transfer save failed:", err);
+        state.transferSaveError = "データファイルの作成または保存に失敗しました。";
+        return null;
+      })
+      .finally(function () {
+        setDataTransferBusyUi("export", false);
+      });
+  }
+
   function getTransferMinimumSection(deviceDef) {
     if (!deviceDef) return null;
     if (deviceDef.family === "quick-share" &&
@@ -1197,9 +1271,21 @@
         ((options && options.detailAsChip) ? " app-dialog-detail-chip" : "") +
         ((options && options.dialogStyle === "guide") ? " app-dialog-detail-guide" : "");
 
-      sectionsEl.innerHTML = "";
-      var detailSections = (options && options.detailSections) || [];
-      if (Array.isArray(detailSections) && detailSections.length) {
+      function readDetailSections() {
+        var source = options && options.detailSections;
+        if (typeof source === "function") {
+          source = source();
+        }
+        return Array.isArray(source) ? source : [];
+      }
+
+      function renderSections() {
+        sectionsEl.innerHTML = "";
+        var detailSections = readDetailSections();
+        if (!(Array.isArray(detailSections) && detailSections.length)) {
+          sectionsEl.hidden = true;
+          return;
+        }
         for (var sectionIdx = 0; sectionIdx < detailSections.length; sectionIdx++) {
           var section = detailSections[sectionIdx] || {};
           var sectionEl = document.createElement("section");
@@ -1248,12 +1334,64 @@
             sectionEl.appendChild(bodyNode);
           }
 
+          if (section.actionId && section.actionLabel) {
+            var actionWrap = document.createElement("div");
+            actionWrap.className = "app-dialog-section-action-wrap";
+            var actionBtn = document.createElement("button");
+            actionBtn.type = "button";
+            actionBtn.className = section.actionClassName || "app-dialog-btn";
+            actionBtn.textContent = String(section.actionLabel);
+            actionBtn.setAttribute("data-dialog-action", String(section.actionId));
+            actionBtn.disabled = !!section.actionDisabled;
+            actionBtn.addEventListener("click", onSectionAction);
+            actionWrap.appendChild(actionBtn);
+            sectionEl.appendChild(actionWrap);
+          }
+
           sectionsEl.appendChild(sectionEl);
         }
         sectionsEl.hidden = false;
-      } else {
-        sectionsEl.hidden = true;
       }
+
+      function setDialogButtonsDisabled(disabled) {
+        okBtn.disabled = !!disabled;
+        cancelBtn.disabled = !!disabled;
+        closeBtn.disabled = !!disabled;
+        var actionButtons = sectionsEl.querySelectorAll("[data-dialog-action]");
+        for (var actionIdx = 0; actionIdx < actionButtons.length; actionIdx++) {
+          actionButtons[actionIdx].disabled = !!disabled;
+        }
+      }
+
+      function onSectionAction(ev) {
+        if (ev) ev.preventDefault();
+        if (!options || typeof options.onSectionAction !== "function") return;
+        var btn = ev && ev.currentTarget;
+        var actionId = btn ? btn.getAttribute("data-dialog-action") : "";
+        if (!actionId) return;
+        var actionResult;
+        setDialogButtonsDisabled(true);
+        try {
+          actionResult = options.onSectionAction(actionId, {
+            refresh: renderSections,
+            close: close,
+          });
+        } catch (err) {
+          console.error("Dialog section action failed:", err);
+          if (!done) {
+            renderSections();
+            setDialogButtonsDisabled(false);
+          }
+          return;
+        }
+        Promise.resolve(actionResult).finally(function () {
+          if (done) return;
+          renderSections();
+          setDialogButtonsDisabled(false);
+        });
+      }
+
+      renderSections();
 
       okBtn.textContent = (options && options.okLabel) || "OK";
       okBtn.className =
@@ -2952,6 +3090,7 @@
     state.selectedTransferMode = "";
     state.selectedTransferDevice = "";
     state.transferLastCreated = null;
+    state.transferSaveError = "";
     renderDeviceTransferCasePanel();
     overlay.removeAttribute("hidden");
   }
@@ -3004,60 +3143,26 @@
     if (state.exportBusy || state.importBusy) return Promise.resolve();
     var deviceDef = getSelectedTransferDeviceDef();
     if (!deviceDef) return Promise.resolve();
-    setDataTransferBusyUi("export", true);
-    return buildBackupFilePayload()
-      .then(function (pkg) {
-        return downloadBackupFileForTransfer(pkg.blob, pkg.name).then(function (result) {
-          result.createdAt = new Date().toISOString();
-          return result;
+    state.transferSaveError = "";
+    return showAppDialog({
+      message: "ここではファイルの送信手順を説明します。",
+      detail:
+        "ファイルの送信作業を行うために、パンセノート以外のアプリ（QuickShare、AirDrop）での操作を案内します。",
+      cancelable: false,
+      dialogStyle: "guide",
+      detailSections: function () {
+        return buildDeviceTransferSendGuideSections(deviceDef);
+      },
+      okLabel: "閉じる",
+      onSectionAction: function (actionId, dialogApi) {
+        if (actionId !== "save-transfer-file") return;
+        return saveDeviceTransferFile(deviceDef).then(function () {
+          if (dialogApi && typeof dialogApi.refresh === "function") {
+            dialogApi.refresh();
+          }
         });
-      })
-      .then(function (result) {
-        if (!result) return;
-        var nextStep = buildTransferSendNextStep(deviceDef, result.fileLabel);
-        var locationLabel = deviceDef.downloadLabel || "ダウンロード";
-        state.transferLastCreated = {
-          fileName: result.fileLabel,
-          locationLabel: locationLabel,
-          createdAt: result.createdAt,
-          nextStep: nextStep,
-        };
-        renderDeviceTransferResult();
-        var guideSections = [
-          {
-            title: "保存したファイル",
-            rows: [
-              ["ファイル名", result.fileLabel],
-              ["保存場所", locationLabel],
-              ["作成日時", formatIsoDisplay(result.createdAt)],
-            ],
-          },
-          {
-            title: "今後の手順",
-            steps: nextStep,
-          },
-        ];
-        var minimumSection = getTransferMinimumSection(deviceDef);
-        if (minimumSection) {
-          guideSections.push(minimumSection);
-        }
-        return persistBackupExportInfo(result.fileLabel).then(function () {
-          return showAppAlert("送るファイルを作りました。", {
-            detail: "今後の作業は、パンセノート以外のアプリでの操作が必要となります。",
-            dialogStyle: "guide",
-            detailSections: guideSections,
-            okLabel: "閉じる",
-          });
-        });
-      })
-      .catch(function (err) {
-        if (isAbortError(err)) return;
-        console.error("Device transfer send failed:", err);
-        return showAppAlert("データファイルの作成または保存に失敗しました。");
-      })
-      .finally(function () {
-        setDataTransferBusyUi("export", false);
-      });
+      },
+    }).then(function () {});
   }
 
   function openAiLookupDialogForRow(tr) {
@@ -4663,6 +4768,7 @@
         bindPress(tab, function () {
           state.selectedTransferMode = tab.getAttribute("data-transfer-mode") || "";
           state.transferLastCreated = null;
+          state.transferSaveError = "";
           renderDeviceTransferCasePanel();
         });
       })(transferModeTabs[transferModeIdx]);
@@ -4673,6 +4779,7 @@
         bindPress(tab, function () {
           state.selectedTransferDevice = tab.getAttribute("data-transfer-device") || "";
           state.transferLastCreated = null;
+          state.transferSaveError = "";
           renderDeviceTransferCasePanel();
         });
       })(transferDeviceTabs[transferDeviceIdx]);

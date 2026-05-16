@@ -1599,6 +1599,15 @@ button.sm {
   text-align: left;
 }
 
+.app-dialog-section-action-wrap {
+  margin-top: 0.75rem;
+  text-align: left;
+}
+
+.app-dialog-section-action {
+  min-width: 8.5rem;
+}
+
 .app-dialog-section-meta {
   margin: 0;
 }
