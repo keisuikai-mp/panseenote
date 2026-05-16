@@ -344,6 +344,7 @@
         <div class="app-dialog-actions">
           <button type="button" id="app-dialog-cancel" class="app-dialog-btn app-dialog-btn-secondary">キャンセル</button>
           <button type="button" id="app-dialog-ok" class="app-dialog-btn app-dialog-btn-primary">OK</button>
+          <button type="button" id="app-dialog-extra" class="app-dialog-btn btn-action-ai" hidden>AIで調べる</button>
         </div>
       </div>
     </div><!-- /#app-dialog -->
@@ -468,9 +469,8 @@
         <div class="device-transfer-body">
           <p class="device-transfer-lead">
             最上部のボタンを使って保存したデータファイルを、他の端末で読み出せば、他の端末との間で、登録データを共有することが出来ます。<br />
-            他の端末への保存データファイルの受け渡し方が解らない方は、以下の手順に従って、データファイルの送受信を試みてください。
-          </p>
-          <p class="device-transfer-lead">
+            他の端末への保存データファイルの受け渡し方が解らない方は、以下の手順に従って、データファイルの送受信を試みてください。<br />
+            <br />
             Windows・Androidスマホ・タブレット同士、または iPhone・iPad・Mac 同士でのファイル受け渡しを案内します。<br />
             Android・WindowsではQuick Share、iPhone・iPad・MacではAirDropを使います。
           </p>
@@ -512,9 +512,6 @@
           <div class="device-transfer-actions">
             <button type="button" id="device-transfer-run" class="app-dialog-btn device-transfer-main-btn" disabled>
               この内容で進む
-            </button>
-            <button type="button" id="device-transfer-ai" class="app-dialog-btn btn-action-ai" disabled>
-              うまくいかない時は AIで調べる
             </button>
           </div>
 

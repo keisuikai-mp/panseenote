@@ -934,16 +934,12 @@
       !!String(state.selectedTransferDevice || "").trim() &&
       !!String(state.selectedTransferMode || "").trim();
     var runBtn = $("#device-transfer-run");
-    var aiBtn = $("#device-transfer-ai");
     var busy = !!(state.exportBusy || state.importBusy);
     if (runBtn) {
       runBtn.disabled = !hasSelection || busy;
       runBtn.textContent = hasSelection
         ? getSelectedTransferModeDef().actionLabel
         : "この内容で進む";
-    }
-    if (aiBtn) {
-      aiBtn.disabled = !hasSelection;
     }
   }
 
@@ -1247,7 +1243,8 @@
       var okBtn = $("#app-dialog-ok");
       var cancelBtn = $("#app-dialog-cancel");
       var closeBtn = $("#app-dialog-close");
-      if (!overlay || !msgEl || !detailEl || !sectionsEl || !okBtn || !cancelBtn || !closeBtn) {
+      var extraBtn = $("#app-dialog-extra");
+      if (!overlay || !msgEl || !detailEl || !sectionsEl || !okBtn || !cancelBtn || !closeBtn || !extraBtn) {
         resolve(options && options.cancelable === false ? true : false);
         return;
       }
@@ -1357,6 +1354,7 @@
         okBtn.disabled = !!disabled;
         cancelBtn.disabled = !!disabled;
         closeBtn.disabled = !!disabled;
+        extraBtn.disabled = !!disabled;
         var actionButtons = sectionsEl.querySelectorAll("[data-dialog-action]");
         for (var actionIdx = 0; actionIdx < actionButtons.length; actionIdx++) {
           actionButtons[actionIdx].disabled = !!disabled;
@@ -1399,6 +1397,10 @@
         ((options && options.danger)
           ? "app-dialog-btn-danger"
           : "app-dialog-btn-primary");
+      extraBtn.textContent = (options && options.extraActionLabel) || "AIで調べる";
+      extraBtn.className =
+        "app-dialog-btn " + ((options && options.extraActionClassName) || "btn-action-ai");
+      extraBtn.hidden = !(options && options.extraActionLabel);
 
       cancelBtn.textContent = (options && options.cancelLabel) || "キャンセル";
       cancelBtn.hidden = !cancelable || hideCancelButton;
@@ -1408,6 +1410,7 @@
         okBtn.removeEventListener("click", onOk);
         cancelBtn.removeEventListener("click", onCancel);
         closeBtn.removeEventListener("click", onCancel);
+        extraBtn.removeEventListener("click", onExtra);
         document.removeEventListener("keydown", onKeyDown, true);
       }
 
@@ -1436,6 +1439,16 @@
         close(false);
       }
 
+      function onExtra(ev) {
+        if (ev) ev.preventDefault();
+        if (!options || typeof options.onExtraAction !== "function") return;
+        try {
+          options.onExtraAction();
+        } catch (err) {
+          console.error("Dialog extra action failed:", err);
+        }
+      }
+
       function onKeyDown(ev) {
         if (ev.key !== "Escape" || !canDismiss) return;
         ev.preventDefault();
@@ -1447,6 +1460,7 @@
       okBtn.addEventListener("click", onOk);
       cancelBtn.addEventListener("click", onCancel);
       closeBtn.addEventListener("click", onCancel);
+      extraBtn.addEventListener("click", onExtra);
       document.addEventListener("keydown", onKeyDown, true);
       if (alignToMeta) {
         updateFloatingUiTop();
@@ -3132,6 +3146,10 @@
       dialogStyle: "guide",
       detailSections: guideSections,
       okLabel: "ファイルを選ぶ",
+      extraActionLabel: "AIで調べる",
+      onExtraAction: function () {
+        openDeviceTransferAiSearch();
+      },
     }).then(function (ok) {
       if (!ok) return;
       closeDeviceTransferDialog();
@@ -3154,6 +3172,10 @@
         return buildDeviceTransferSendGuideSections(deviceDef);
       },
       okLabel: "閉じる",
+      extraActionLabel: "AIで調べる",
+      onExtraAction: function () {
+        openDeviceTransferAiSearch();
+      },
       onSectionAction: function (actionId, dialogApi) {
         if (actionId !== "save-transfer-file") return;
         return saveDeviceTransferFile(deviceDef).then(function () {
@@ -4755,11 +4777,6 @@
         if (state.selectedTransferMode === "receive") {
           onDeviceTransferImport();
         }
-      });
-    }
-    if ($("#device-transfer-ai")) {
-      bindPress($("#device-transfer-ai"), function () {
-        openDeviceTransferAiSearch();
       });
     }
     var transferModeTabs = document.querySelectorAll(".device-transfer-mode-tabs .device-transfer-case-tab");
