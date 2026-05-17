@@ -1764,6 +1764,11 @@ button.sm {
   line-height: 1.55;
 }
 
+.import-confirm-note {
+  margin: -0.2rem 0 0.7rem;
+  text-align: left;
+}
+
 .import-confirm-option {
   display: flex;
   gap: 0.6rem;

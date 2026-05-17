@@ -368,6 +368,7 @@
         </dl>
         <div id="import-confirm-mode-wrap" class="import-confirm-mode-wrap" hidden>
           <p class="import-confirm-mode-title">現在のパンセノートに登録データがあります。読み込み方法を選択してください。</p>
+          <p id="import-confirm-note" class="app-dialog-detail import-confirm-note" hidden></p>
           <label class="import-confirm-option">
             <input type="radio" name="import-confirm-mode" value="append" checked />
             <span>追加して読み込む</span>
@@ -377,7 +378,6 @@
             <span>既存データを破棄して上書きする</span>
           </label>
         </div>
-        <p id="import-confirm-note" class="app-dialog-detail" hidden></p>
         <div class="app-dialog-actions">
           <button type="button" id="import-confirm-cancel" class="app-dialog-btn app-dialog-btn-secondary">キャンセル</button>
           <button type="button" id="import-confirm-ok" class="app-dialog-btn app-dialog-btn-primary">読み込む</button>
