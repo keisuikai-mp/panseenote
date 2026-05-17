@@ -788,6 +788,7 @@
       return {
         fileName: fileLabel,
         itemCount: data.items.length,
+        photoCount: countBackupPhotoItems(data),
         execute: function (options) {
           return importBackupPayload(data, fileLabel, null, options);
         },
@@ -816,6 +817,7 @@
             return {
               fileName: fileLabel,
               itemCount: data.items.length,
+              photoCount: countBackupPhotoItems(data),
               execute: function (options) {
                 return importBackupPayload(data, fileLabel, function (photoMeta) {
                   if (!photoMeta || !photoMeta.fullFileName || !photoMeta.thumbFileName) {
@@ -859,6 +861,17 @@
     return /\.zip$/i.test(String(file.name || ""))
       ? prepareZipBackupImport(file)
       : prepareJsonBackupImport(file);
+  }
+
+  function countBackupPhotoItems(data) {
+    if (!data || !Array.isArray(data.items)) return 0;
+    var count = 0;
+    for (var i = 0; i < data.items.length; i++) {
+      if (data.items[i] && data.items[i].photo) {
+        count += 1;
+      }
+    }
+    return count;
   }
 
   function requestSaveFileHandle(name) {
@@ -1497,6 +1510,7 @@
       var overlay = $("#import-confirm-dialog");
       var fileNameEl = $("#import-confirm-file-name");
       var itemCountEl = $("#import-confirm-item-count");
+      var photoCountEl = $("#import-confirm-photo-count");
       var modeWrap = $("#import-confirm-mode-wrap");
       var noteEl = $("#import-confirm-note");
       var okBtn = $("#import-confirm-ok");
@@ -1505,6 +1519,7 @@
         !overlay ||
         !fileNameEl ||
         !itemCountEl ||
+        !photoCountEl ||
         !modeWrap ||
         !noteEl ||
         !okBtn ||
@@ -1516,6 +1531,8 @@
 
       var existingCount = Number((options && options.existingCount) || 0);
       if (!isFinite(existingCount) || existingCount < 0) existingCount = 0;
+      var existingPhotoCount = Number((options && options.existingPhotoCount) || 0);
+      if (!isFinite(existingPhotoCount) || existingPhotoCount < 0) existingPhotoCount = 0;
       var hasExisting = existingCount > 0;
       var prevActive = document.activeElement;
       var done = false;
@@ -1523,9 +1540,10 @@
 
       fileNameEl.textContent = formatTextDisplay(options && options.fileName);
       itemCountEl.textContent = formatCountDisplay(options && options.itemCount) + "件";
+      photoCountEl.textContent = formatCountDisplay(options && options.photoCount) + "件";
       modeWrap.hidden = !hasExisting;
       noteEl.textContent = hasExisting
-        ? "現在の登録データは" + formatCountDisplay(existingCount) + "件です。"
+        ? "現在の登録データは" + formatCountDisplay(existingCount) + "件、登録写真は" + formatCountDisplay(existingPhotoCount) + "件です。"
         : "";
       noteEl.hidden = !hasExisting;
 
@@ -4478,11 +4496,18 @@
       })
       .then(function (job) {
         if (!job) return;
-        return db.countEntries(state.idb).then(function (existingCount) {
+        return Promise.all([
+          db.countEntries(state.idb),
+          db.countPhotoAttachments(state.idb),
+        ]).then(function (counts) {
+          var existingCount = counts[0];
+          var existingPhotoCount = counts[1];
           return showImportConfirmDialog({
             fileName: job.fileName,
             itemCount: job.itemCount,
+            photoCount: job.photoCount,
             existingCount: existingCount,
+            existingPhotoCount: existingPhotoCount,
           }).then(function (result) {
             if (!result) return;
             return runPreparedImport(job, {
