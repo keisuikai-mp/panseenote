@@ -3083,6 +3083,10 @@
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
+  function openHelpPage() {
+    window.open("https://hca02673-beep.github.io/panseenote-help/", "_blank", "noopener,noreferrer");
+  }
+
   function renderDeviceTransferCasePanel() {
     var modeTabs = document.querySelectorAll(".device-transfer-mode-tabs .device-transfer-case-tab");
     var deviceTabs = document.querySelectorAll(".device-transfer-device-tabs .device-transfer-case-tab");
@@ -4667,6 +4671,11 @@
     $("#btn-license-activate").addEventListener("click", function () {
       onActivateLicense();
     });
+    if ($("#btn-help")) {
+      bindPress($("#btn-help"), function () {
+        openHelpPage();
+      });
+    }
     if ($("#btn-force-refresh")) {
       bindPress($("#btn-force-refresh"), function () {
         refreshAppToLatest();
