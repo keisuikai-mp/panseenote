@@ -441,6 +441,28 @@
     el.addEventListener("click", invoke);
   }
 
+  function bindTouchFriendlyPress(el, handler) {
+    if (!el || typeof handler !== "function") return;
+    var lastHandledAt = 0;
+    function invokeOnce(ev) {
+      var now = Date.now();
+      if (now - lastHandledAt < 450) return;
+      lastHandledAt = now;
+      return handler(ev);
+    }
+    bindPress(el, invokeOnce);
+    var lastTouchHandledAt = 0;
+    el.addEventListener("touchend", function (ev) {
+      var now = Date.now();
+      if (now - lastTouchHandledAt < 450) return;
+      lastTouchHandledAt = now;
+      window.__PANSEE_LAST_TOUCH_POINTERUP_AT__ = now;
+      if (typeof ev.preventDefault === "function") ev.preventDefault();
+      if (typeof ev.stopPropagation === "function") ev.stopPropagation();
+      invokeOnce(ev);
+    }, { passive: false });
+  }
+
   function nowMs() {
     if (typeof performance !== "undefined" && typeof performance.now === "function") {
       return performance.now();
@@ -787,7 +809,7 @@
     return readFileAsText(file, "utf-8").then(function (text) {
       var data = parseBackupJsonText(text);
       if (!data) {
-        return showAppAlert("バックアップファイルの形式が正しくありません。").then(function () {
+        return showAppAlert("外部保存データファイルの形式が正しくありません。").then(function () {
           return null;
         });
       }
@@ -809,14 +831,14 @@
         return ZipLib.loadAsync(buffer).then(function (zip) {
           var jsonFile = zip.file(C.BACKUP_JSON_NAME);
           if (!jsonFile) {
-            return showAppAlert("バックアップファイルの形式が正しくありません。").then(function () {
+            return showAppAlert("外部保存データファイルの形式が正しくありません。").then(function () {
               return null;
             });
           }
           return jsonFile.async("string").then(function (text) {
             var data = parseBackupJsonText(text);
             if (!data) {
-              return showAppAlert("バックアップファイルの形式が正しくありません。").then(function () {
+              return showAppAlert("外部保存データファイルの形式が正しくありません。").then(function () {
                 return null;
               });
             }
@@ -950,7 +972,7 @@
   function shareBackupFile(file, name) {
     return navigator.share({
       title: name,
-      text: "パンセノートのバックアップファイルです。",
+      text: "パンセノートの外部保存データファイルです。",
       files: [file],
     });
   }
@@ -1232,7 +1254,7 @@
       multiple: false,
       types: [
         {
-          description: "バックアップファイル",
+          description: "外部保存データファイル",
           accept: {
             "application/json": [".json"],
             "application/zip": [".zip"],
@@ -3191,6 +3213,8 @@
   function closeDemoGuideDialog() {
     var overlay = $("#demo-guide-overlay");
     if (overlay) overlay.setAttribute("hidden", "");
+    state.demoGuideDismissedAt = Date.now();
+    window.__PANSEE_LAST_TOUCH_POINTERUP_AT__ = Date.now();
   }
 
   function showDemoDisableDialog() {
@@ -3317,7 +3341,7 @@
       "現在のパンセノートをデモモードにします。\nデモボタンが表示されるようになります。\nその後、サンプルデータが読み込まれます（追加/上書き選択可能）。\nそれ以外のパンセノートの機能に変わりはありません。",
       {
         okLabel: "実行する",
-        cancelLabel: "キャンセル",
+        cancelLabel: "実行にしない",
       }
     ).then(function (ok) {
       if (!ok) return false;
@@ -3991,6 +4015,10 @@
         !tr.getAttribute("data-draft") &&
         !tr.classList.contains("mobile-inline-editor-row")
       ) {
+        var demoGuideDismissDelta = Date.now() - Number(state.demoGuideDismissedAt || 0);
+        if (demoGuideDismissDelta >= 0 && demoGuideDismissDelta < 700) {
+          return;
+        }
         var dismissDelta = Date.now() - Number(state.mobileEditDismissedAt || 0);
         if (dismissDelta >= 0 && dismissDelta < 500) {
           return;
@@ -4613,7 +4641,7 @@
 
   function importBackupPayload(data, fileLabel, photoResolver, options) {
     if (!data || data.app !== C.APP_ID || !Array.isArray(data.items)) {
-      return showAppAlert("バックアップファイルの形式が正しくありません。");
+      return showAppAlert("外部保存データファイルの形式が正しくありません。");
     }
     var replaceExisting = !options || options.replaceExisting !== false;
     return db.getLicense(state.idb).then(function (lic) {
@@ -4694,14 +4722,14 @@
                   return;
                 }
                 if (truncated) {
-                  toast("バックアップファイルの先頭から、登録上限件数まで読み込みました。");
+                  toast("外部保存データファイルの先頭から、登録上限件数まで読み込みました。");
                   return;
                 }
                 if (photoOverflow) {
-                  toast("バックアップファイルを読み込みました。写真は上限2000枚まで復元しました。");
+                  toast("外部保存データファイルを読み込みました。写真は上限2000枚まで復元しました。");
                   return;
                 }
-                toast("バックアップファイルを読み込みました。");
+                toast("外部保存データファイルを読み込みました。");
               });
             });
           });
@@ -4735,22 +4763,22 @@
         if (!result) return;
         return persistBackupExportInfo(result.fileLabel).then(function () {
           if (result.mode === "saved") {
-            toast("バックアップファイルを保存しました。");
+            toast("外部保存データファイルを保存しました。");
             return;
           }
           if (result.mode === "shared") {
-            toast("バックアップファイルを共有しました。");
+            toast("外部保存データファイルを共有しました。");
             return;
           }
           return showAppAlert(
-            "バックアップファイルのダウンロードを開始しました。保存先は端末・ブラウザ側で確認してください。"
+            "外部保存データファイルのダウンロードを開始しました。保存先は端末・ブラウザ側で確認してください。"
           );
         });
       })
       .catch(function (err) {
         if (isAbortError(err)) return;
         console.error("Backup export failed:", err);
-        return showAppAlert("バックアップファイルの保存に失敗しました。");
+        return showAppAlert("外部保存データファイルの保存に失敗しました。");
       })
       .finally(function () {
         setDataTransferBusyUi("export", false);
@@ -4763,7 +4791,7 @@
     setDataTransferBusyUi("import", true);
     return job.execute(options)
       .catch(function () {
-        return showAppAlert("バックアップファイルの読み込みに失敗しました。");
+        return showAppAlert("外部保存データファイルの読み込みに失敗しました。");
       })
       .finally(function () {
         setDataTransferBusyUi("import", false);
@@ -4956,7 +4984,7 @@
       });
     }
     if ($("#btn-demo")) {
-      bindPress($("#btn-demo"), function () {
+      bindTouchFriendlyPress($("#btn-demo"), function () {
         openDemoGuideDialog(false);
       });
     }
@@ -5013,12 +5041,12 @@
       });
     }
     if ($("#demo-guide-close")) {
-      bindPress($("#demo-guide-close"), function () {
+      bindTouchFriendlyPress($("#demo-guide-close"), function () {
         closeDemoGuideDialog();
       });
     }
     if ($("#demo-guide-start")) {
-      bindPress($("#demo-guide-start"), function () {
+      bindTouchFriendlyPress($("#demo-guide-start"), function () {
         closeDemoGuideDialog();
       });
     }
