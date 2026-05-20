@@ -84,6 +84,9 @@
       termsVersion: "",
       preferManualRegister: false,
       speechTimeoutMs: C.SPEECH_TIMEOUT_MS,
+      showDemoButton: false,
+      demoModeEnabled: false,
+      demoGuideSeen: false,
     };
   }
 
@@ -116,6 +119,12 @@
     d.preferManualRegister = !!d.preferManualRegister;
     if (d.speechTimeoutMs === undefined || d.speechTimeoutMs === null) d.speechTimeoutMs = C.SPEECH_TIMEOUT_MS;
     d.speechTimeoutMs = Number(d.speechTimeoutMs) || C.SPEECH_TIMEOUT_MS;
+    if (d.showDemoButton === undefined || d.showDemoButton === null) d.showDemoButton = false;
+    d.showDemoButton = !!d.showDemoButton;
+    if (d.demoModeEnabled === undefined || d.demoModeEnabled === null) d.demoModeEnabled = false;
+    d.demoModeEnabled = !!d.demoModeEnabled;
+    if (d.demoGuideSeen === undefined || d.demoGuideSeen === null) d.demoGuideSeen = false;
+    d.demoGuideSeen = !!d.demoGuideSeen;
     return d;
   }
 
@@ -255,6 +264,8 @@
     e.photoAttached = !!e.photoAttached;
     if (e.photoId === undefined || e.photoId === null) e.photoId = "";
     if (e.photoThumbId === undefined || e.photoThumbId === null) e.photoThumbId = "";
+    if (e.demoFlag === undefined || e.demoFlag === null) e.demoFlag = false;
+    e.demoFlag = !!e.demoFlag;
     return e;
   }
 
@@ -490,6 +501,7 @@
       book: book == null ? "" : String(book),
       page: page == null ? "" : String(page),
       memo: m,
+      demoFlag: false,
       photoAttached: false,
       photoId: "",
       photoThumbId: "",
@@ -519,6 +531,8 @@
       book: book,
       page: page,
       memo: memo,
+      demoFlag:
+        patch.demoFlag !== undefined ? !!patch.demoFlag : !!prev.demoFlag,
       photoAttached:
         patch.photoAttached !== undefined ? !!patch.photoAttached : !!prev.photoAttached,
       photoId:

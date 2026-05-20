@@ -45,6 +45,9 @@
           </div>
           <div class="header-right-block">
             <div class="header-data-actions">
+              <button type="button" id="btn-demo" class="sm-header btn-demo-trigger" hidden>
+                デモ
+              </button>
               <button type="button" id="btn-export" class="sm-header btn-action-green">
                 <span class="lbl-wide">データファイル保存</span><span class="lbl-narrow">データ保存</span>
               </button>
@@ -242,6 +245,10 @@
               <li>アプリ版: <span id="app-version-label">—</span> <span id="app-build-label" style="font-size:0.85em;color:var(--muted)"></span></li>
               <li>現在認識している表示領域: <span id="viewport-size-label">—</span></li>
             </ul>
+            <label class="settings-check-row demo-settings-row" for="setting-show-demo-button">
+              <input type="checkbox" id="setting-show-demo-button" />
+              <span>デモボタンを表示する</span>
+            </label>
             <div class="license-meta-action-row">
               <button type="button" id="btn-force-refresh" class="settings-license-btn">
                 最新版を読み込み直す
@@ -348,6 +355,49 @@
         </div>
       </div>
     </div><!-- /#app-dialog -->
+
+    <div id="demo-guide-overlay" class="demo-guide-overlay" hidden aria-modal="true" role="dialog" aria-labelledby="demo-guide-title">
+      <div class="demo-guide-box" role="document">
+        <div class="demo-guide-header">
+          <h2 id="demo-guide-title" class="demo-guide-title">パンセノート 新体験へようこそ！</h2>
+          <span class="demo-guide-badge">サンプルデータ入り</span>
+        </div>
+        <div class="demo-guide-body">
+          <button type="button" id="demo-guide-close" class="mobile-edit-close-btn demo-guide-close" aria-label="閉じる">✕</button>
+          <p class="demo-guide-lead">
+            サンプルデータが読み込まれています。<br />
+            音声検索を試したり、検索結果を「AIで調べる」ボタンで調べたり体験できます。
+          </p>
+          <section class="demo-guide-section">
+            <h3>おすすめ検索語</h3>
+            <div class="demo-guide-chip-list">
+              <span class="demo-guide-chip">乾燥</span>
+              <span class="demo-guide-chip">むくみ</span>
+              <span class="demo-guide-chip">部屋干し</span>
+              <span class="demo-guide-chip">あんかけ</span>
+              <span class="demo-guide-chip">大根</span>
+              <span class="demo-guide-chip">換気扇</span>
+              <span class="demo-guide-chip">圧力鍋</span>
+              <span class="demo-guide-chip">眉毛</span>
+              <span class="demo-guide-chip">肩こり</span>
+              <span class="demo-guide-chip">口紅</span>
+            </div>
+          </section>
+          <section class="demo-guide-section">
+            <h3>音声登録も試せます</h3>
+            <div class="demo-guide-chip-list">
+              <span class="demo-guide-chip demo-guide-chip-wide">「メモ 洗濯機」と発声</span>
+              <span class="demo-guide-chip demo-guide-chip-wide">「1冊目 5ページ レシピ」と発声</span>
+            </div>
+          </section>
+          <div class="demo-guide-note-block">
+            <p><strong>ヘルプ：</strong> 詳細なヘルプ機能がヘルプボタンに準備されていますので、ご不明な点はヘルプボタンもご活用ください。</p>
+            <p><strong>サンプルデータについて：</strong> このサンプルデータは、設定ライセンス画面でいつでも削除することが出来ます。</p>
+          </div>
+          <button type="button" id="demo-guide-start" class="demo-guide-start-btn">さっく試す</button>
+        </div>
+      </div>
+    </div><!-- /#demo-guide-overlay -->
 
     <div id="import-confirm-dialog" class="app-dialog-overlay" hidden aria-modal="true" role="dialog" aria-labelledby="import-confirm-title">
       <div class="app-dialog-box import-confirm-box" role="document">

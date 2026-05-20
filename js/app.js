@@ -53,7 +53,11 @@
     selectedTransferMode: "",
     transferLastCreated: null,
     transferSaveError: "",
+    demoFlowBusy: false,
   };
+
+  var DEMO_DATA_FILE_NAME = "panseenote-demo-000000.zip";
+  var DEMO_DATA_FILE_URL = C.getAssetUrl("demo-data/" + DEMO_DATA_FILE_NAME);
 
   var DEVICE_TRANSFER_MODES = [
     {
@@ -639,8 +643,10 @@
     if (mode === "import") state.importBusy = !!isBusy;
     var disabled = !!(state.exportBusy || state.importBusy);
     var exportBtn = $("#btn-export");
+    var demoBtn = $("#btn-demo");
     var importBtn = $("#btn-import-trigger");
     if (exportBtn) exportBtn.disabled = disabled;
+    if (demoBtn) demoBtn.disabled = disabled;
     if (importBtn) importBtn.disabled = disabled;
     updateDeviceTransferActionUi();
   }
@@ -683,6 +689,7 @@
               book: e.book,
               page: e.page,
               memo: e.memo || "",
+              demoFlag: !!e.demoFlag,
               createdAt: e.createdAt,
               updatedAt: e.updatedAt,
             };
@@ -872,6 +879,40 @@
       }
     }
     return count;
+  }
+
+  function buildDemoImportJob() {
+    return fetch(DEMO_DATA_FILE_URL, { cache: "no-store" })
+      .then(function (response) {
+        if (!response.ok) {
+          throw new Error("デモデータファイルの取得に失敗しました。");
+        }
+        return response.blob();
+      })
+      .then(function (blob) {
+        var file;
+        try {
+          file = new File([blob], DEMO_DATA_FILE_NAME, { type: "application/zip" });
+        } catch (_) {
+          file = blob;
+          file.name = DEMO_DATA_FILE_NAME;
+        }
+        return prepareImportJob(file);
+      })
+      .then(function (job) {
+        if (!job) return null;
+        return {
+          fileName: job.fileName,
+          itemCount: job.itemCount,
+          photoCount: job.photoCount,
+          execute: function (options) {
+            var nextOptions = Object.assign({}, options || {}, {
+              forceDemoFlag: true,
+            });
+            return job.execute(nextOptions);
+          },
+        };
+      });
   }
 
   function requestSaveFileHandle(name) {
@@ -1456,7 +1497,9 @@
         if (ev) ev.preventDefault();
         if (!options || typeof options.onExtraAction !== "function") return;
         try {
-          options.onExtraAction();
+          options.onExtraAction({
+            close: close,
+          });
         } catch (err) {
           console.error("Dialog extra action failed:", err);
         }
@@ -2079,6 +2122,9 @@
     if (manualEl) manualEl.checked = isManualRegisterPreferred();
     var timeoutEl = $("#setting-speech-timeout");
     if (timeoutEl) timeoutEl.value = String(getSpeechTimeoutMs());
+    var demoToggleEl = $("#setting-show-demo-button");
+    if (demoToggleEl) demoToggleEl.checked = !!(state.settings && state.settings.demoModeEnabled);
+    updateDemoButtonUi();
     updateVoiceRegisterButtonUi();
   }
 
@@ -3085,6 +3131,219 @@
 
   function openHelpPage() {
     window.open("https://hca02673-beep.github.io/panseenote-help/", "_blank", "noopener,noreferrer");
+  }
+
+  function isDemoModeEnabled() {
+    return !!(state.settings && state.settings.demoModeEnabled);
+  }
+
+  function shouldShowDemoButton() {
+    return !!(state.settings && (state.settings.showDemoButton || state.settings.demoModeEnabled));
+  }
+
+  function isDemoQueryRequested() {
+    try {
+      var params = new URLSearchParams(window.location.search || "");
+      return params.get("demo") === "1";
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function updateDemoButtonUi() {
+    var demoBtn = $("#btn-demo");
+    if (!demoBtn) return;
+    if (shouldShowDemoButton()) {
+      demoBtn.removeAttribute("hidden");
+    } else {
+      demoBtn.setAttribute("hidden", "");
+    }
+  }
+
+  function openDemoGuideDialog(markSeen) {
+    var overlay = $("#demo-guide-overlay");
+    if (!overlay) return Promise.resolve();
+    overlay.removeAttribute("hidden");
+    if (markSeen) {
+      return persistSettingsPatch({ demoGuideSeen: true }).catch(function () {});
+    }
+    return Promise.resolve();
+  }
+
+  function closeDemoGuideDialog() {
+    var overlay = $("#demo-guide-overlay");
+    if (overlay) overlay.setAttribute("hidden", "");
+  }
+
+  function showDemoDisableDialog() {
+    return showAppDialog({
+      message: "デモモードをオフにします。\nサンプルデータを消去しますか？",
+      cancelable: true,
+      hideCancelButton: true,
+      showCloseButton: true,
+      okLabel: "サンプルデータを消去する",
+      extraActionLabel: "サンプルデータを残しておく",
+      onExtraAction: function (dialogApi) {
+        if (dialogApi && typeof dialogApi.close === "function") {
+          dialogApi.close("keep");
+        }
+      },
+    }).then(function (result) {
+      if (result === "keep") return "keep";
+      return result ? "delete" : "cancel";
+    });
+  }
+
+  function removeDemoEntries() {
+    return db.getAllEntries(state.idb).then(function (rows) {
+      var demoIds = [];
+      for (var i = 0; i < rows.length; i++) {
+        if (rows[i] && rows[i].demoFlag && rows[i].id) {
+          demoIds.push(String(rows[i].id));
+        }
+      }
+      var chain = Promise.resolve();
+      for (var j = 0; j < demoIds.length; j++) {
+        (function (entryId) {
+          chain = chain.then(function () {
+            removeEntryFromSearchSnapshot(entryId);
+            return db.deleteEntry(state.idb, entryId);
+          });
+        })(demoIds[j]);
+      }
+      return chain.then(function () {
+        return renderTable({ refreshSearchResults: true });
+      }).then(function () {
+        return refreshCount();
+      }).then(function () {
+        return demoIds.length;
+      });
+    });
+  }
+
+  function runDemoImportJob(options) {
+    options = options || {};
+    return buildDemoImportJob()
+      .then(function (job) {
+        if (!job) return false;
+        return Promise.all([
+          db.countEntries(state.idb),
+          db.countPhotoAttachments(state.idb),
+        ]).then(function (counts) {
+          if (Number(counts[0] || 0) <= 0) {
+            return runPreparedImport(job, {
+              replaceExisting: false,
+              forceDemoFlag: true,
+            }).then(function () {
+              if (options.showGuide) {
+                return openDemoGuideDialog(true).then(function () {
+                  return true;
+                });
+              }
+              return true;
+            });
+          }
+          return showImportConfirmDialog({
+            fileName: job.fileName,
+            itemCount: job.itemCount,
+            photoCount: job.photoCount,
+            existingCount: counts[0],
+            existingPhotoCount: counts[1],
+          }).then(function (result) {
+            if (!result) return false;
+            return runPreparedImport(job, {
+              replaceExisting: result.mode === "replace",
+              forceDemoFlag: true,
+            }).then(function () {
+              if (options.showGuide) {
+                return openDemoGuideDialog(true).then(function () {
+                  return true;
+                });
+              }
+              return true;
+            });
+          });
+        });
+      })
+      .catch(function (err) {
+        console.error("Demo import failed:", err);
+        return showAppAlert("デモデータの読み込みに失敗しました。").then(function () {
+          return false;
+        });
+      });
+  }
+
+  function enableDemoMode(options) {
+    options = options || {};
+    if (state.demoFlowBusy) return Promise.resolve(false);
+    state.demoFlowBusy = true;
+    return persistSettingsPatch({
+      showDemoButton: true,
+      demoModeEnabled: true,
+    })
+      .then(function () {
+        return runDemoImportJob({
+          showGuide: !!options.showGuide,
+        }).then(function () {
+          return true;
+        });
+      })
+      .finally(function () {
+        state.demoFlowBusy = false;
+      });
+  }
+
+  function confirmAndEnableDemoMode(options) {
+    options = options || {};
+    return showAppConfirm(
+      "現在のパンセノートをデモモードにします。\nデモボタンが表示されるようになります。\nその後、サンプルデータが読み込まれます（追加/上書き選択可能）。\nそれ以外のパンセノートの機能に変わりはありません。",
+      {
+        okLabel: "実行する",
+        cancelLabel: "キャンセル",
+      }
+    ).then(function (ok) {
+      if (!ok) return false;
+      return enableDemoMode(options);
+    });
+  }
+
+  function handleDemoSettingToggle(checked) {
+    if (checked) {
+      return confirmAndEnableDemoMode({ showGuide: false }).then(function (enabled) {
+        if (!enabled) updateClientSettingsUi();
+        return enabled;
+      });
+    }
+    return showDemoDisableDialog().then(function (action) {
+      if (action === "cancel") {
+        updateClientSettingsUi();
+        return false;
+      }
+      return persistSettingsPatch({
+        showDemoButton: false,
+        demoModeEnabled: false,
+      }).then(function () {
+        if (action === "delete") {
+          return removeDemoEntries().then(function () {
+            toast("サンプルデータを削除しました。");
+            return true;
+          });
+        }
+        toast("サンプルデータはそのまま残しています。");
+        return true;
+      });
+    });
+  }
+
+  function handleDemoQueryEntry() {
+    if (!isDemoQueryRequested()) return Promise.resolve();
+    if (isDemoModeEnabled()) return Promise.resolve();
+    return db.countEntries(state.idb).then(function (count) {
+      if (count === 0) {
+        return enableDemoMode({ showGuide: true });
+      }
+      return confirmAndEnableDemoMode({ showGuide: true });
+    });
   }
 
   function renderDeviceTransferCasePanel() {
@@ -4377,6 +4636,7 @@
                 var e = db.buildNewEntry(item.title, item.book, item.page, item.memo || "");
                 if (item.createdAt) e.createdAt = String(item.createdAt);
                 if (item.updatedAt) e.updatedAt = String(item.updatedAt);
+                e.demoFlag = !!((options && options.forceDemoFlag) || item.demoFlag);
                 if (
                   !item.photo ||
                   typeof photoResolver !== "function" ||
@@ -4676,6 +4936,11 @@
         openHelpPage();
       });
     }
+    if ($("#btn-demo")) {
+      bindPress($("#btn-demo"), function () {
+        openDemoGuideDialog(false);
+      });
+    }
     if ($("#btn-force-refresh")) {
       bindPress($("#btn-force-refresh"), function () {
         refreshAppToLatest();
@@ -4699,6 +4964,16 @@
         });
       });
     }
+    if ($("#setting-show-demo-button")) {
+      $("#setting-show-demo-button").addEventListener("change", function () {
+        var desired = !!this.checked;
+        handleDemoSettingToggle(desired).catch(function (err) {
+          console.error("Demo setting update failed:", err);
+          updateClientSettingsUi();
+          showAppAlert("デモモードの切り替えに失敗しました。");
+        });
+      });
+    }
     if ($("#photo-file")) {
       $("#photo-file").addEventListener("change", function () {
         var file = this.files && this.files[0] ? this.files[0] : null;
@@ -4715,6 +4990,23 @@
       $("#photo-viewer-overlay").addEventListener("click", function (ev) {
         if (ev.target === $("#photo-viewer-overlay")) {
           closePhotoViewer();
+        }
+      });
+    }
+    if ($("#demo-guide-close")) {
+      bindPress($("#demo-guide-close"), function () {
+        closeDemoGuideDialog();
+      });
+    }
+    if ($("#demo-guide-start")) {
+      bindPress($("#demo-guide-start"), function () {
+        closeDemoGuideDialog();
+      });
+    }
+    if ($("#demo-guide-overlay")) {
+      $("#demo-guide-overlay").addEventListener("click", function (ev) {
+        if (ev.target === $("#demo-guide-overlay")) {
+          closeDemoGuideDialog();
         }
       });
     }
@@ -4947,6 +5239,8 @@
         updateFloatingUiTop();
         syncTableStructure();
         return checkTerms().then(function () {
+          return handleDemoQueryEntry();
+        }).then(function () {
           return startUsageSession();
         }).then(function () {
           return renderTable({ refreshSearchResults: true });

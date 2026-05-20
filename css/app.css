@@ -211,6 +211,21 @@ button.sm-header {
   font-size: 0.85rem;
 }
 
+button.btn-demo-trigger {
+  padding: 0.22rem 0.55rem;
+  min-width: 0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: #d92323;
+  border-color: #a60d0d;
+}
+
+button.btn-demo-trigger:hover:not(:disabled) {
+  background: #bf1717;
+  border-color: #8f0d0d;
+}
+
 /* 設定パネル表示中: メインへ戻る（薄い青背景・文字は黒） */
 #btn-settings-toggle.btn-settings-home {
   background: #cfe7ff;
@@ -1065,6 +1080,11 @@ button.sm {
   margin-bottom: 0.8rem;
 }
 
+.demo-settings-row {
+  margin-top: 0.8rem;
+  margin-bottom: 0.1rem;
+}
+
 .settings-check-row input {
   margin: 0;
 }
@@ -1271,6 +1291,146 @@ button.sm {
 
 .license-meta-action-row {
   margin-top: 0.75rem;
+}
+
+.demo-guide-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2140;
+  background: rgba(0, 0, 0, 0.34);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.demo-guide-overlay[hidden] {
+  display: none;
+}
+
+.demo-guide-box {
+  width: min(100%, 33rem);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  background: #f9fbff;
+  border: 1px solid #c9d7ea;
+  border-radius: 20px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+}
+
+.demo-guide-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 1rem 1rem 0;
+}
+
+.demo-guide-title {
+  margin: 0;
+  color: #0a64a7;
+  font-size: 1.35rem;
+  line-height: 1.45;
+}
+
+.demo-guide-badge {
+  flex: 0 0 auto;
+  padding: 0.28rem 0.7rem;
+  border-radius: 8px;
+  background: #e00000;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.demo-guide-body {
+  position: relative;
+  padding: 0.75rem 1rem 1rem;
+}
+
+.demo-guide-close {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.95rem;
+}
+
+.demo-guide-lead {
+  margin: 0.55rem 0 0;
+  padding-right: 2.3rem;
+  color: var(--fg);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.demo-guide-section {
+  margin-top: 0.95rem;
+}
+
+.demo-guide-section h3 {
+  margin: 0 0 0.45rem;
+  font-size: 1rem;
+  color: #44546a;
+}
+
+.demo-guide-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.demo-guide-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.05rem;
+  padding: 0.25rem 0.8rem;
+  border: 1px solid #cedcf0;
+  border-radius: 999px;
+  background: #e8f1fb;
+  color: #226aa8;
+  font-weight: 700;
+  font-size: 0.98rem;
+  line-height: 1.25;
+}
+
+.demo-guide-chip-wide {
+  max-width: 100%;
+}
+
+.demo-guide-note-block {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid #d8dce4;
+}
+
+.demo-guide-note-block p {
+  margin: 0;
+  font-size: 0.96rem;
+  line-height: 1.55;
+}
+
+.demo-guide-note-block p + p {
+  margin-top: 0.45rem;
+}
+
+.demo-guide-note-block strong {
+  color: #cc0000;
+}
+
+.demo-guide-start-btn {
+  display: block;
+  width: min(100%, 22rem);
+  margin: 1rem auto 0;
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  border: 1px solid #2d6dc7;
+  background: #2b79d0;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 700;
+}
+
+.demo-guide-start-btn:hover {
+  background: #2368b7;
 }
 
 .license-warning-banner {
