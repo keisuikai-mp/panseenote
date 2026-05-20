@@ -3150,6 +3150,24 @@
     }
   }
 
+  function replaceDemoEntryUrlWithNormalUrl() {
+    if (!isDemoQueryRequested()) return;
+    if (!window.history || typeof window.history.replaceState !== "function") return;
+    try {
+      var url = new URL(window.location.href);
+      url.searchParams.delete("demo");
+      var nextUrl =
+        url.pathname +
+        (url.search || "") +
+        (url.hash || "");
+      window.history.replaceState(window.history.state, "", nextUrl || C.getBasePath());
+    } catch (_) {
+      try {
+        window.history.replaceState(window.history.state, "", C.getBasePath());
+      } catch (_) {}
+    }
+  }
+
   function updateDemoButtonUi() {
     var demoBtn = $("#btn-demo");
     if (!demoBtn) return;
@@ -3337,6 +3355,7 @@
 
   function handleDemoQueryEntry() {
     if (!isDemoQueryRequested()) return Promise.resolve();
+    replaceDemoEntryUrlWithNormalUrl();
     if (isDemoModeEnabled()) return Promise.resolve();
     return db.countEntries(state.idb).then(function (count) {
       if (count === 0) {
