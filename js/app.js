@@ -2565,13 +2565,68 @@
     updateFloatingUiTop();
   }
 
+  function maskLicenseKeyForDisplay(raw) {
+    var key = String(raw || "").trim();
+    if (!key) return "";
+    var blocks = key.split("-");
+    for (var i = 0; i < blocks.length; i++) {
+      var block = String(blocks[i] || "");
+      if (!block) continue;
+      if (i === 0) {
+        blocks[i] = block;
+      } else if (block.length >= 4) {
+        blocks[i] = "xxx" + block.charAt(block.length - 1);
+      } else {
+        blocks[i] = "xxx";
+      }
+    }
+    return blocks.join("-");
+  }
+
+  function getLicenseKeyInputElement() {
+    return $("#license-key-input");
+  }
+
+  function setLicenseKeyInputValue(rawValue, options) {
+    var inp = getLicenseKeyInputElement();
+    if (!inp) return;
+    var raw = String(rawValue || "").trim();
+    var editing = !!(options && options.editing);
+    inp.dataset.rawValue = raw;
+    inp.dataset.editing = editing ? "true" : "false";
+    inp.value = editing ? raw : maskLicenseKeyForDisplay(raw);
+  }
+
+  function getLicenseKeyInputRawValue() {
+    var inp = getLicenseKeyInputElement();
+    if (!inp) return "";
+    if (inp.dataset && inp.dataset.editing === "true") {
+      return String(inp.value || "");
+    }
+    return String((inp.dataset && inp.dataset.rawValue) || inp.value || "");
+  }
+
+  function beginLicenseKeyEditing() {
+    var inp = getLicenseKeyInputElement();
+    if (!inp) return;
+    if (inp.dataset.editing === "true") return;
+    setLicenseKeyInputValue(inp.dataset.rawValue || "", { editing: true });
+  }
+
+  function finishLicenseKeyEditing() {
+    var inp = getLicenseKeyInputElement();
+    if (!inp) return;
+    if (inp.dataset.editing !== "true") return;
+    var raw = String(inp.value || "");
+    setLicenseKeyInputValue(raw, { editing: false });
+  }
+
   function updateLicenseDetailsPanel() {
     var licDoc = state.license;
     if (!licDoc) return;
-    var inp = $("#license-key-input");
-    if (inp) {
-      inp.value = licDoc.licenseKey ? String(licDoc.licenseKey) : "";
-    }
+    setLicenseKeyInputValue(licDoc.licenseKey ? String(licDoc.licenseKey) : "", {
+      editing: false,
+    });
     var pd = $("#license-plan-detail");
     if (pd) {
       pd.textContent =
@@ -3219,7 +3274,7 @@
 
   function showDemoDisableDialog() {
     return showAppDialog({
-      message: "デモモードをオフにします。\nサンプルデータを消去しますか？",
+      message: "体験機（デモ機）モードをオフにします。\nサンプルデータを消去しますか？",
       cancelable: true,
       hideCancelButton: true,
       showCloseButton: true,
@@ -3338,10 +3393,10 @@
   function confirmAndEnableDemoMode(options) {
     options = options || {};
     return showAppConfirm(
-      "現在のパンセノートをデモモードにします。\nデモボタンが表示されるようになります。\nその後、サンプルデータが読み込まれます（追加/上書き選択可能）。\nそれ以外のパンセノートの機能に変わりはありません。",
+      "体験機（デモ機）モードをオンにします。\nデモボタンが表示されるようになります。\nその後、サンプルデータが読み込まれます（追加/上書き選択可能）。\nそれ以外のパンセノートの機能に変わりはありません。",
       {
         okLabel: "実行する",
-        cancelLabel: "実行にしない",
+        cancelLabel: "実行しない",
       }
     ).then(function (ok) {
       if (!ok) return false;
@@ -4520,7 +4575,7 @@
   }
 
   function onActivateLicense() {
-    var raw = ($("#license-key-input") && $("#license-key-input").value) || "";
+    var raw = getLicenseKeyInputRawValue();
     var key = lic.normalizeLicenseKeyInput(raw);
     if (!key) {
       return showAppAlert("ライセンスキーを入力してください。");
@@ -4591,7 +4646,7 @@
         };
         state.license = doc;
         return db.putLicense(state.idb, doc).then(function () {
-          if ($("#license-key-input")) $("#license-key-input").value = key;
+          setLicenseKeyInputValue(key, { editing: false });
           updatePlanBar();
           setLicenseDiagnostics("");
           toast("認証ありがとうございます。パンセノートの準備が整いました。");
@@ -4978,6 +5033,18 @@
     $("#btn-license-activate").addEventListener("click", function () {
       onActivateLicense();
     });
+    if ($("#license-key-input")) {
+      $("#license-key-input").addEventListener("focus", function () {
+        beginLicenseKeyEditing();
+      });
+      $("#license-key-input").addEventListener("input", function () {
+        this.dataset.rawValue = String(this.value || "");
+        this.dataset.editing = "true";
+      });
+      $("#license-key-input").addEventListener("blur", function () {
+        finishLicenseKeyEditing();
+      });
+    }
     if ($("#btn-help")) {
       bindPress($("#btn-help"), function () {
         openHelpPage();
