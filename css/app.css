@@ -1511,9 +1511,14 @@ button.sm {
   background: rgba(0, 0, 0, 0.72);
   z-index: 2000;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 1rem;
+  overflow-y: auto;
+  padding:
+    max(0.75rem, env(safe-area-inset-top))
+    1rem
+    max(0.75rem, env(safe-area-inset-bottom))
+    1rem;
 }
 
 .terms-overlay[hidden] {
@@ -1528,10 +1533,12 @@ button.sm {
   width: 100%;
   max-width: 680px;
   max-height: min(90vh, calc(100vh - 2rem));
+  max-height: calc(100dvh - max(1.5rem, env(safe-area-inset-top) + env(safe-area-inset-bottom)));
   display: flex;
   flex-direction: column;
   padding: 1.75rem 1.75rem 1.5rem;
   gap: 1rem;
+  margin: auto 0;
 }
 
 .terms-title {
@@ -1545,6 +1552,7 @@ button.sm {
 
 .terms-scroll {
   flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -2512,20 +2520,43 @@ table.entries-table.voice-register-mobile-mode .mobile-inline-editor-cell {
 }
 
 @media (max-width: 880px) {
+  .terms-overlay {
+    padding:
+      max(0.45rem, env(safe-area-inset-top))
+      0.45rem
+      max(0.45rem, env(safe-area-inset-bottom))
+      0.45rem;
+  }
+
   .terms-box {
     padding: 1.25rem 1rem 1rem;
     border-radius: 10px;
     max-height: calc(100vh - 2rem);
+    max-height: calc(100dvh - max(0.9rem, env(safe-area-inset-top) + env(safe-area-inset-bottom)));
+    gap: 0.8rem;
   }
 
   .terms-title {
     font-size: 0.97rem;
+    padding-bottom: 0.55rem;
   }
 
   .terms-scroll {
     min-height: 0;
     max-height: none;
     padding: 0.75rem 0.85rem;
+  }
+
+  .terms-agree-row {
+    padding-top: 0.7rem;
+  }
+
+  .terms-agree-label {
+    font-size: 0.88rem;
+  }
+
+  .terms-agree-btn {
+    width: 100%;
   }
 
   .terms-section h3 {
