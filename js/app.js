@@ -2508,6 +2508,21 @@
     return "https://hca02673-beep.github.io/panseenote-lp/#pricing";
   }
 
+  function getPlanUpNoteText(licDoc) {
+    var code = String(
+      (licDoc && licDoc.planCode) || C.DEFAULT_PLAN_CODE || "trial"
+    )
+      .trim()
+      .toLowerCase();
+    if (code === "trial") {
+      return "・プランアップページに移ります。";
+    }
+    return (
+      "・プランアップ完了メールが届きましたら、そのまま[認証する]ボタンを押して下さい。\n" +
+      "・現在のライセンスキーはそのまま引き継がれます。"
+    );
+  }
+
   function onPlanUp() {
     var licDoc = state.license || {};
     var code = String(licDoc.planCode || C.DEFAULT_PLAN_CODE || "trial").trim().toLowerCase();
@@ -2675,6 +2690,10 @@
     if (lc) lc.textContent = formatIsoDisplay(licDoc.lastCheckedAt);
     var nx = $("#license-next-check");
     if (nx) nx.textContent = formatIsoDisplay(licDoc.nextCheckAfter);
+    var planUpNote = $(".plan-up-note");
+    if (planUpNote) {
+      planUpNote.textContent = getPlanUpNoteText(licDoc);
+    }
   }
 
   /**
