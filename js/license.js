@@ -17,10 +17,31 @@
   };
 
   function normalizeLicenseKeyInput(raw) {
-    return String(raw || "")
-      .trim()
+    var s = String(raw || "").trim();
+    if (typeof s.normalize === "function") {
+      s = s.normalize("NFKC");
+    }
+    s = s
       .toUpperCase()
-      .replace(/\s+/g, "");
+      .replace(/\s+/g, "")
+      .replace(/[－‐‑‒–—―−ー～~]+/g, "-")
+      .replace(/[^A-Z0-9]+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+
+    var compact = s.replace(/-/g, "");
+    if (/^[A-Z0-9]{15}$/.test(compact)) {
+      return (
+        compact.slice(0, 3) +
+        "-" +
+        compact.slice(3, 7) +
+        "-" +
+        compact.slice(7, 11) +
+        "-" +
+        compact.slice(11, 15)
+      );
+    }
+    return s;
   }
 
   function isValidLicenseKeyFormat(key) {

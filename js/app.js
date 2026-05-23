@@ -4603,6 +4603,7 @@
   function onActivateLicense() {
     var raw = getLicenseKeyInputRawValue();
     var key = lic.normalizeLicenseKeyInput(raw);
+    setLicenseKeyInputValue(key, { editing: true });
     if (!key) {
       return showAppAlert("ライセンスキーを入力してください。");
     }
