@@ -2496,6 +2496,9 @@
   function getPlanUpgradePageUrl() {
     var licDoc = state.license || {};
     var code = String(licDoc.planCode || C.DEFAULT_PLAN_CODE || "trial").trim().toLowerCase();
+    if (code === "trial") {
+      return "https://hca02673-beep.github.io/panseenote-lp/?mode=upgrade&from=trial#pricing";
+    }
     if (code === "basic") {
       return "https://hca02673-beep.github.io/panseenote-lp/?mode=upgrade&from=basic#pricing";
     }
