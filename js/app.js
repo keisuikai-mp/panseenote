@@ -2493,6 +2493,29 @@
     return C.getUsageApiUrl ? C.getUsageApiUrl() : "";
   }
 
+  function getPlanUpgradePageUrl() {
+    var licDoc = state.license || {};
+    var code = String(licDoc.planCode || C.DEFAULT_PLAN_CODE || "trial").trim().toLowerCase();
+    if (code === "basic") {
+      return "https://hca02673-beep.github.io/panseenote-lp/?mode=upgrade&from=basic#pricing";
+    }
+    if (code === "standard") {
+      return "https://hca02673-beep.github.io/panseenote-lp/?mode=upgrade&from=standard#pricing";
+    }
+    return "https://hca02673-beep.github.io/panseenote-lp/#pricing";
+  }
+
+  function onPlanUp() {
+    var licDoc = state.license || {};
+    var code = String(licDoc.planCode || C.DEFAULT_PLAN_CODE || "trial").trim().toLowerCase();
+    if (code === "premium") {
+      return showAppAlert("現在、最上位のプレミアムプランをご利用中です。");
+    }
+    var url = getPlanUpgradePageUrl();
+    window.open(url, "_blank", "noopener,noreferrer");
+    return Promise.resolve();
+  }
+
   function setLicenseDiagnostics(msg) {
     var el = $("#license-api-diagnostics");
     if (!el) return;
@@ -5033,6 +5056,11 @@
     $("#btn-license-activate").addEventListener("click", function () {
       onActivateLicense();
     });
+    if ($("#btn-plan-up")) {
+      bindPress($("#btn-plan-up"), function () {
+        onPlanUp();
+      });
+    }
     if ($("#license-key-input")) {
       $("#license-key-input").addEventListener("focus", function () {
         beginLicenseKeyEditing();
