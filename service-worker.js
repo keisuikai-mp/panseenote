@@ -2,7 +2,7 @@
 
 "use strict";
 
-var SW_VERSION = "panseenote-v1";
+var SW_VERSION = "panseenote-v2";
 var SW_CACHE_PREFIX = "panseenote-";
 var SW_FILE_NAME = "service-worker.js";
 var scopeUrl = new URL(self.location.href);
@@ -22,10 +22,7 @@ var PRECACHE_URLS = [
   scopePath + "js/voice.js",
   scopePath + "js/app.js",
   scopePath + "img/logo.svg",
-  scopePath + "img/icons/apple-touch-icon.png",
-  scopePath + "img/icons/icon-192.png",
-  scopePath + "img/icons/icon-512.png",
-  scopePath + "img/icons/icon-maskable-512.png",
+  scopePath + "../Docs/パンセノートアイコン.png",
   scopePath + "vendor/jszip.min.js"
 ];
 
