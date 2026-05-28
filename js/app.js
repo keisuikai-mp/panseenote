@@ -2497,15 +2497,15 @@
     var licDoc = state.license || {};
     var code = String(licDoc.planCode || C.DEFAULT_PLAN_CODE || "trial").trim().toLowerCase();
     if (code === "trial") {
-      return "https://hca02673-beep.github.io/panseenote-lp/?mode=upgrade&from=trial#pricing";
+      return "https://keisuikai-mp.github.io/panseenote-lp/?mode=upgrade&from=trial#pricing";
     }
     if (code === "basic") {
-      return "https://hca02673-beep.github.io/panseenote-lp/?mode=upgrade&from=basic#pricing";
+      return "https://keisuikai-mp.github.io/panseenote-lp/?mode=upgrade&from=basic#pricing";
     }
     if (code === "standard") {
-      return "https://hca02673-beep.github.io/panseenote-lp/?mode=upgrade&from=standard#pricing";
+      return "https://keisuikai-mp.github.io/panseenote-lp/?mode=upgrade&from=standard#pricing";
     }
-    return "https://hca02673-beep.github.io/panseenote-lp/#pricing";
+    return "https://keisuikai-mp.github.io/panseenote-lp/#pricing";
   }
 
   function getPlanUpNoteText(licDoc) {
@@ -3252,7 +3252,7 @@
   }
 
   function openHelpPage() {
-    window.open("https://hca02673-beep.github.io/panseenote-help/", "_blank", "noopener,noreferrer");
+    window.open("https://keisuikai-mp.github.io/panseenote-help/", "_blank", "noopener,noreferrer");
   }
 
   function isDemoModeEnabled() {
