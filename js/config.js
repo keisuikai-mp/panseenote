@@ -11,7 +11,7 @@
   var CONFIG = {
     APP_ID: "PenseeNote",
     APP_VERSION: "1.0.9",
-    BUILD_TIMESTAMP: "2026-05-27T19:26:30Z",
+    BUILD_TIMESTAMP: "2026-04-19T03:30:00Z",
     EXPORT_JSON_VERSION: "2.0",
     TERMS_VERSION: "1.1",
     APP_NAME: "パンセノート",
@@ -55,7 +55,7 @@
      * GAS デプロイ後の Web アプリ URL（/exec で終わる想定）
      * 未設定時は window.__PANSEE_LICENSE_API_URL__ で上書き可能
      */
-    LICENSE_API_URL: "https://script.google.com/macros/s/AKfycbzCoZsd9oE5BG_DH6AtmhWLDTvgSmm_aNPu6Y6fMX5qJfgySs1rffdm_xqB9B9ohKs/exec",
+    LICENSE_API_URL: "https://script.google.com/macros/s/AKfycbzw3rqDDKsSpnrCagtcQRefb7X9EJ0eGIwlV51_4meIj-VrohpXZaGO8JJCJfaQLfls1g/exec",
 
     /**
      * 利用状況モニタリング用 GAS Web アプリ URL
