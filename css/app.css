@@ -1020,9 +1020,6 @@ button.sm {
   font-weight: 600;
 }
 
-#btn-plan-up,
-#btn-license-activate,
-#btn-force-refresh,
 #btn-device-transfer {
   background: #cfe7ff;
   border-color: #9ec5f0;
@@ -1030,9 +1027,6 @@ button.sm {
   font-weight: 700;
 }
 
-#btn-plan-up:hover,
-#btn-license-activate:hover,
-#btn-force-refresh:hover,
 #btn-device-transfer:hover {
   background: #b8d9f7;
   border-color: var(--accent);
