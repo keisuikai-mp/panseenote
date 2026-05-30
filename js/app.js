@@ -2496,14 +2496,26 @@
   function getPlanUpgradePageUrl() {
     var licDoc = state.license || {};
     var code = String(licDoc.planCode || C.DEFAULT_PLAN_CODE || "trial").trim().toLowerCase();
+    var key = String(licDoc.licenseKey || "").trim();
+    function withLicenseKey(url) {
+      if (!key) return url;
+      var hashIndex = url.indexOf("#");
+      if (hashIndex < 0) return url + "&licenseKey=" + encodeURIComponent(key);
+      return (
+        url.slice(0, hashIndex) +
+        "&licenseKey=" +
+        encodeURIComponent(key) +
+        url.slice(hashIndex)
+      );
+    }
     if (code === "trial") {
       return "https://keisuikai-mp.github.io/panseenote-lp/?mode=upgrade&from=trial#pricing";
     }
     if (code === "basic") {
-      return "https://keisuikai-mp.github.io/panseenote-lp/?mode=upgrade&from=basic#pricing";
+      return withLicenseKey("https://keisuikai-mp.github.io/panseenote-lp/?mode=upgrade&from=basic#pricing");
     }
     if (code === "standard") {
-      return "https://keisuikai-mp.github.io/panseenote-lp/?mode=upgrade&from=standard#pricing";
+      return withLicenseKey("https://keisuikai-mp.github.io/panseenote-lp/?mode=upgrade&from=standard#pricing");
     }
     return "https://keisuikai-mp.github.io/panseenote-lp/#pricing";
   }
