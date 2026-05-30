@@ -54,7 +54,11 @@
     transferLastCreated: null,
     transferSaveError: "",
     demoFlowBusy: false,
+    licenseMaintenanceMode: "",
+    licenseMaintenanceBusy: false,
   };
+
+  var INTERNAL_MAINTENANCE_LABEL = "内部情報・メンテナンス";
 
   var DEMO_DATA_FILE_NAME = "panseenote-demo-000000.zip";
   var DEMO_DATA_FILE_URL = C.getAssetUrl("demo-data/" + DEMO_DATA_FILE_NAME);
@@ -2554,7 +2558,7 @@
       openAccordionByIds(
         "#internal-settings-toggle-btn",
         "#internal-settings-body",
-        "内部情報・診断"
+        INTERNAL_MAINTENANCE_LABEL
       );
     }
   }
@@ -3265,6 +3269,147 @@
 
   function openHelpPage() {
     window.open("https://keisuikai-mp.github.io/panseenote-help/", "_blank", "noopener,noreferrer");
+  }
+
+  function normalizeMaintenanceEmailInput(raw) {
+    var s = String(raw || "").trim();
+    if (typeof s.normalize === "function") {
+      s = s.normalize("NFKC");
+    }
+    return s.toLowerCase();
+  }
+
+  function isValidMaintenanceEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim());
+  }
+
+  function getLicenseMaintenanceModeDef(mode) {
+    if (mode === "change_email") {
+      return {
+        title: "登録メールアドレスの変更",
+        lead:
+          "現在サーバーに登録されているメールアドレスを入力してください。確認用メールをお送りします。",
+        flow:
+          "確認メールのリンクを開いた後、その画面で新しいメールアドレスを入力します。新しいメールアドレスにも確認メールが届き、リンクを開くと変更が確定します。",
+        action: "request_email_change_old_verify",
+        okMessage:
+          "受付を行いました。登録済みメールアドレス宛に、変更手続き用の認証メールをお送りします。メールが届かない場合でも、存在有無は個別にご案内していません。",
+      };
+    }
+    return {
+      title: "ライセンスキー問い合わせ",
+      lead:
+        "サーバーに登録されているメールアドレスを入力してください。確認用メールをお送りします。",
+      flow:
+        "確認メールのリンクを開くと、そのメールアドレスに紐づく有効なライセンスキーをまとめてお送りします。",
+      action: "request_license_resend",
+      okMessage:
+        "受付を行いました。登録済みメールアドレス宛に、確認用メールをお送りします。メールが届かない場合でも、存在有無は個別にご案内していません。",
+    };
+  }
+
+  function setLicenseMaintenanceBusyUi(isBusy) {
+    state.licenseMaintenanceBusy = !!isBusy;
+    var input = $("#license-maintenance-email");
+    var submitBtn = $("#license-maintenance-submit");
+    var cancelBtn = $("#license-maintenance-cancel");
+    var closeBtn = $("#license-maintenance-close");
+    var helpBtn = $("#license-maintenance-help");
+    if (input) input.disabled = !!isBusy;
+    if (submitBtn) submitBtn.disabled = !!isBusy;
+    if (cancelBtn) cancelBtn.disabled = !!isBusy;
+    if (closeBtn) closeBtn.disabled = !!isBusy;
+    if (helpBtn) helpBtn.disabled = !!isBusy;
+  }
+
+  function openLicenseMaintenanceDialog(mode) {
+    var overlay = $("#license-maintenance-overlay");
+    var titleEl = $("#license-maintenance-title");
+    var leadEl = $("#license-maintenance-lead");
+    var flowEl = $("#license-maintenance-flow");
+    var emailInput = $("#license-maintenance-email");
+    var statusEl = $("#license-maintenance-status");
+    if (!overlay || !titleEl || !leadEl || !flowEl || !emailInput || !statusEl) return;
+    var def = getLicenseMaintenanceModeDef(mode);
+    state.licenseMaintenanceMode = mode;
+    titleEl.textContent = def.title;
+    leadEl.textContent = def.lead;
+    flowEl.textContent = def.flow;
+    emailInput.value = "";
+    statusEl.textContent = "";
+    statusEl.setAttribute("hidden", "");
+    setLicenseMaintenanceBusyUi(false);
+    overlay.removeAttribute("hidden");
+    window.setTimeout(function () {
+      try {
+        emailInput.focus();
+      } catch (_) {}
+    }, 0);
+  }
+
+  function closeLicenseMaintenanceDialog(force) {
+    if (state.licenseMaintenanceBusy && !force) return;
+    var overlay = $("#license-maintenance-overlay");
+    if (overlay) overlay.setAttribute("hidden", "");
+  }
+
+  function submitLicenseMaintenanceRequest() {
+    if (state.licenseMaintenanceBusy) return Promise.resolve();
+    var mode = state.licenseMaintenanceMode || "";
+    var def = getLicenseMaintenanceModeDef(mode);
+    var input = $("#license-maintenance-email");
+    var statusEl = $("#license-maintenance-status");
+    var url = getLicenseApiUrl();
+    var email = normalizeMaintenanceEmailInput(input && input.value);
+    if (!email) {
+      return showAppAlert("登録メールアドレスを入力してください。");
+    }
+    if (!isValidMaintenanceEmail(email)) {
+      return showAppAlert("メールアドレス形式が不正です。");
+    }
+    if (!navigator.onLine) {
+      return showAppAlert("オンライン時のみ実行できます。");
+    }
+    if (!url) {
+      return showAppAlert(
+        "管理サーバーURLが未設定です。js/config.js の LICENSE_API_URL を設定してください。"
+      );
+    }
+    if (statusEl) {
+      statusEl.textContent = "ただいま送信中です。";
+      statusEl.removeAttribute("hidden");
+    }
+    setLicenseMaintenanceBusyUi(true);
+    return lic
+      .postLicenseAction(url, {
+        action: def.action,
+        email: email,
+        clientVersion: C.APP_VERSION,
+        deviceHint: navigator.userAgent || "",
+      })
+      .then(function (result) {
+        closeLicenseMaintenanceDialog(true);
+        if (!result || result.ok !== true) {
+          return showAppAlert(
+            (result && result.message) || "受付に失敗しました。時間をおいてもう一度お試しください。"
+          );
+        }
+        return showAppAlert((result && result.message) || def.okMessage, {
+          detail:
+            "登録メールアドレスを忘れた場合や、そのメールアドレスで受信できない場合は、ヘルプページの案内に沿ってお問い合わせください。",
+        });
+      })
+      .catch(function (err) {
+        console.error("License maintenance request failed:", err);
+        return showAppAlert(formatLicenseApiError(err));
+      })
+      .finally(function () {
+        if (statusEl) {
+          statusEl.textContent = "";
+          statusEl.setAttribute("hidden", "");
+        }
+        setLicenseMaintenanceBusyUi(false);
+      });
   }
 
   function isDemoModeEnabled() {
@@ -5123,6 +5268,52 @@
         refreshAppToLatest();
       });
     }
+    if ($("#btn-license-email-change")) {
+      bindPress($("#btn-license-email-change"), function () {
+        openLicenseMaintenanceDialog("change_email");
+      });
+    }
+    if ($("#btn-license-key-inquiry")) {
+      bindPress($("#btn-license-key-inquiry"), function () {
+        openLicenseMaintenanceDialog("license_inquiry");
+      });
+    }
+    var licenseMaintenanceOverlay = $("#license-maintenance-overlay");
+    if (licenseMaintenanceOverlay) {
+      licenseMaintenanceOverlay.addEventListener("click", function (ev) {
+        if (ev.target === licenseMaintenanceOverlay) {
+          closeLicenseMaintenanceDialog();
+        }
+      });
+    }
+    if ($("#license-maintenance-close")) {
+      bindPress($("#license-maintenance-close"), function () {
+        closeLicenseMaintenanceDialog();
+      });
+    }
+    if ($("#license-maintenance-cancel")) {
+      bindPress($("#license-maintenance-cancel"), function () {
+        closeLicenseMaintenanceDialog();
+      });
+    }
+    if ($("#license-maintenance-help")) {
+      bindPress($("#license-maintenance-help"), function () {
+        openHelpPage();
+      });
+    }
+    if ($("#license-maintenance-submit")) {
+      bindPress($("#license-maintenance-submit"), function () {
+        submitLicenseMaintenanceRequest();
+      });
+    }
+    if ($("#license-maintenance-email")) {
+      $("#license-maintenance-email").addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter") {
+          ev.preventDefault();
+          submitLicenseMaintenanceRequest();
+        }
+      });
+    }
     if ($("#setting-prefer-manual-register")) {
       $("#setting-prefer-manual-register").addEventListener("change", function () {
         persistSettingsPatch({
@@ -5566,7 +5757,7 @@
       setAccordionExpanded(
         toggleBtn,
         body,
-        "内部情報・診断",
+        INTERNAL_MAINTENANCE_LABEL,
         body.hasAttribute("hidden")
       );
     });
