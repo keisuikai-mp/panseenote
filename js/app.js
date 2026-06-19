@@ -561,21 +561,14 @@
   function showTermsModal() {
     return new Promise(function (resolve) {
       var overlay = $("#terms-modal");
-      var check = $("#terms-agree-check");
       var btn = $("#btn-terms-agree");
-      if (!overlay || !check || !btn) {
+      if (!overlay || !btn) {
         resolve();
         return;
       }
 
       overlay.removeAttribute("hidden");
-
-      check.addEventListener("change", function () {
-        btn.disabled = !check.checked;
-      });
-
-      btn.addEventListener("click", function () {
-        if (!check.checked) return;
+      btn.onclick = function () {
         db.updateSettings(state.idb, {
           termsAcceptedAt: new Date().toISOString(),
           termsVersion: C.TERMS_VERSION,
@@ -584,7 +577,7 @@
           overlay.setAttribute("hidden", "");
           resolve();
         });
-      });
+      };
     });
   }
 

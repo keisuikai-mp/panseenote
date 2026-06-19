@@ -1751,6 +1751,33 @@ button.sm {
   margin-bottom: 0;
 }
 
+.terms-section ol,
+.terms-section ul {
+  margin: 0 0 0.7rem 1.35rem;
+  padding: 0;
+  color: var(--fg);
+}
+
+.terms-section li {
+  font-size: 0.88rem;
+  line-height: 1.65;
+  margin-bottom: 0.4rem;
+}
+
+.terms-section li:last-child {
+  margin-bottom: 0;
+}
+
+.terms-section a {
+  color: var(--accent);
+  word-break: break-word;
+}
+
+.terms-meta {
+  font-size: 0.84rem;
+  color: var(--muted);
+}
+
 .terms-agree-row {
   border-top: 1px solid var(--border);
   padding-top: 0.85rem;
@@ -1773,6 +1800,13 @@ button.sm {
   height: 1.1rem;
   accent-color: var(--accent);
   cursor: pointer;
+}
+
+.terms-agree-note {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--fg);
 }
 
 .terms-agree-btn {
@@ -2712,6 +2746,10 @@ table.entries-table.voice-register-mobile-mode .mobile-inline-editor-cell {
     font-size: 0.88rem;
   }
 
+  .terms-agree-note {
+    font-size: 0.88rem;
+  }
+
 .license-maintenance-overlay {
   position: fixed;
   inset: 0;
@@ -2832,6 +2870,10 @@ table.entries-table.voice-register-mobile-mode .mobile-inline-editor-cell {
   }
 
   .terms-section p {
+    font-size: 0.83rem;
+  }
+
+  .terms-section li {
     font-size: 0.83rem;
   }
 

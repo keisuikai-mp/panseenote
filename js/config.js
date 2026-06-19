@@ -11,9 +11,9 @@
   var CONFIG = {
     APP_ID: "PenseeNote",
     APP_VERSION: "1.0.9",
-    BUILD_TIMESTAMP: "2026-05-30T22:59:14Z",
+    BUILD_TIMESTAMP: "2026-04-19T03:30:00Z",
     EXPORT_JSON_VERSION: "2.0",
-    TERMS_VERSION: "1.1",
+    TERMS_VERSION: "1.2",
     APP_NAME: "パンセノート",
     APP_SHORT_NAME: "パンセノート",
     APP_DESCRIPTION: "紙ノートに書いた情報の索引を、音声と手入力で登録・検索します。",
