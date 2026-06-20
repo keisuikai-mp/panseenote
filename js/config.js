@@ -10,7 +10,8 @@
 
   var CONFIG = {
     APP_ID: "PenseeNote",
-    APP_VERSION: "1.0.9",
+    // メジャー・マイナーは手動更新し、個別ビルド識別は BUILD_TIMESTAMP を使う。
+    APP_VERSION: "1.0.0",
     BUILD_TIMESTAMP: "2026-04-19T03:30:00Z",
     EXPORT_JSON_VERSION: "2.0",
     TERMS_VERSION: "1.2",

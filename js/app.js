@@ -561,14 +561,21 @@
   function showTermsModal() {
     return new Promise(function (resolve) {
       var overlay = $("#terms-modal");
+      var check = $("#terms-agree-check");
       var btn = $("#btn-terms-agree");
-      if (!overlay || !btn) {
+      if (!overlay || !check || !btn) {
         resolve();
         return;
       }
 
       overlay.removeAttribute("hidden");
+      check.checked = false;
+      btn.disabled = true;
+      check.onchange = function () {
+        btn.disabled = !check.checked;
+      };
       btn.onclick = function () {
+        if (!check.checked) return;
         db.updateSettings(state.idb, {
           termsAcceptedAt: new Date().toISOString(),
           termsVersion: C.TERMS_VERSION,
