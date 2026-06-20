@@ -11,7 +11,7 @@
   var CONFIG = {
     APP_ID: "PenseeNote",
     APP_VERSION: "1.0.0",
-    BUILD_TIMESTAMP: "2026-06-21T05:57:00Z",
+    BUILD_TIMESTAMP: "2026-06-20T21:03:52Z",
     EXPORT_JSON_VERSION: "2.0",
     TERMS_VERSION: "1.2",
     APP_NAME: "パンセノート",
