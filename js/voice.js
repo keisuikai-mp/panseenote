@@ -118,11 +118,6 @@
       rec.lang = C.SPEECH_LANG;
       rec.continuous = false;
       rec.interimResults = false;
-      if ("unspokenPunctuation" in rec) {
-        try {
-          rec.unspokenPunctuation = false;
-        } catch (_) {}
-      }
       var settled = false;
       var sawFirstResult = false;
 
