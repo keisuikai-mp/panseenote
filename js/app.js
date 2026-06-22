@@ -56,6 +56,7 @@
     demoFlowBusy: false,
     licenseMaintenanceMode: "",
     licenseMaintenanceBusy: false,
+    voiceRecognitionBusy: false,
   };
 
   var INTERNAL_MAINTENANCE_LABEL = "内部情報・メンテナンス";
@@ -2138,6 +2139,14 @@
       return "Windows版Edgeでは音声認識が不安定または利用不可の場合があります。Chromeの利用をご検討ください。" + tail;
     }
     return buildSpeechTimeoutMessage(tail);
+  }
+
+  function setVoiceRecognitionBusyUi(isBusy) {
+    state.voiceRecognitionBusy = !!isBusy;
+    var searchBtn = $("#btn-voice-search");
+    var registerBtn = $("#btn-voice-register");
+    if (searchBtn) searchBtn.disabled = !!isBusy;
+    if (registerBtn) registerBtn.disabled = !!isBusy;
   }
 
   function enterManualRegisterMode(metaMsg) {
@@ -4463,6 +4472,7 @@
   }
 
   function onVoiceSearch() {
+    if (state.voiceRecognitionBusy) return Promise.resolve();
     var trace = createVoiceTimingTrace("search");
     var timeoutMs = getSpeechTimeoutMs();
     trace.mark("onVoiceSearch_enter");
@@ -4481,6 +4491,7 @@
     trace.mark("speech_support_checked", { code: "supported" });
     warnOfflineVoiceUsage();
     trace.mark("recognizeOnce_call");
+    setVoiceRecognitionBusyUi(true);
     return voice.recognizeOnce({ trace: trace, timeoutMs: timeoutMs }).then(function (text) {
       var normalizedText = norm(text);
       trace.mark("onVoiceSearch_recognize_resolved", {
@@ -4542,10 +4553,13 @@
       }).then(function () {
         toast(state.voiceSearchMsg);
       });
+    }).finally(function () {
+      setVoiceRecognitionBusyUi(false);
     });
   }
 
   function onVoiceRegister() {
+    if (state.voiceRecognitionBusy) return Promise.resolve();
     var trace = createVoiceTimingTrace("register");
     var timeoutMs = getSpeechTimeoutMs();
     trace.mark("onVoiceRegister_enter");
@@ -4585,6 +4599,7 @@
       voice.playStartBeep();
     }
     trace.mark("recognizeOnce_call");
+    setVoiceRecognitionBusyUi(true);
     return voice.recognizeOnce({ trace: trace, timeoutMs: timeoutMs }).then(function (text) {
       trace.mark("onVoiceRegister_recognize_resolved", {
         empty: !String(text || "").trim(),
@@ -4630,6 +4645,8 @@
       var failMsg = buildSpeechFailureMessage(err, "手動で登録ができます。");
       pushVoiceRecentLog("", null, "失敗", appendVoiceTimingNote(failMsg, trace));
       return enterManualRegisterMode(failMsg);
+    }).finally(function () {
+      setVoiceRecognitionBusyUi(false);
     });
   }
 
