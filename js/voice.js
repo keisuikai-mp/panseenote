@@ -118,6 +118,11 @@
       rec.lang = C.SPEECH_LANG;
       rec.continuous = false;
       rec.interimResults = false;
+      if ("unspokenPunctuation" in rec) {
+        try {
+          rec.unspokenPunctuation = false;
+        } catch (_) {}
+      }
       var settled = false;
       var sawFirstResult = false;
 
@@ -212,6 +217,8 @@
   function normalizeSpeechText(text) {
     return String(text == null ? "" : text)
       .normalize("NFKC")
+      // Edge 系で自動付与されやすい句読点は、短語検索・登録ではノイズになりやすい。
+      .replace(/[。．.、，,！？!?]/g, "")
       .replace(/\u3000/g, " ")
       .replace(/\s+/g, " ")
       .trim();
