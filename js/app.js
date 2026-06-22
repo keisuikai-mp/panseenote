@@ -4490,6 +4490,10 @@
     }
     trace.mark("speech_support_checked", { code: "supported" });
     warnOfflineVoiceUsage();
+    if (voice && typeof voice.playStartBeep === "function") {
+      trace.mark("search_start_beep_played");
+      voice.playStartBeep();
+    }
     trace.mark("recognizeOnce_call");
     setVoiceRecognitionBusyUi(true);
     return voice.recognizeOnce({ trace: trace, timeoutMs: timeoutMs }).then(function (text) {
@@ -4514,6 +4518,9 @@
             processedLabel: "正規化後",
             processedSummary: normalizedText || "（空欄）",
           });
+          if (voice && typeof voice.playSuccessBeep === "function") {
+            voice.playSuccessBeep();
+          }
       }
       $("#manual-search").value = normalizedText;
       state.searchQuery = normalizedText;
@@ -4622,6 +4629,9 @@
         "「" + registeredTitleLabel + "」が登録されました。";
 
       pushVoiceRecentLog(text, parsed, "成功", appendVoiceTimingNote(registerNote, trace));
+      if (voice && typeof voice.playSuccessBeep === "function") {
+        voice.playSuccessBeep();
+      }
       var entry = db.buildNewEntry(registeredTitle, registeredBook, registeredPage, "");
       return db.putEntry(state.idb, entry).then(function () {
         return incrementUnsavedChangeCount().then(function () {

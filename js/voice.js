@@ -90,7 +90,24 @@
    * 音声認識フェーズ終了の合図（成功失敗に依存しない）
    */
   function playEndBeep() {
-    playBeep(880, 0.12, 0.08);
+    playBeep(1174, 0.035, 0.03);
+  }
+
+  /**
+   * 音声認識で何らかの文字列が得られた合図。
+   * 終了ビープの直後でも聞き分けやすいよう、軽い二音にする。
+   */
+  function playSuccessBeep() {
+    try {
+      window.setTimeout(function () {
+        playBeep(880, 0.05, 0.035);
+        window.setTimeout(function () {
+          playBeep(1320, 0.06, 0.04);
+        }, 55);
+      }, 60);
+    } catch (e) {
+      /* 再生不可環境は無視 */
+    }
   }
 
   /**
@@ -370,5 +387,6 @@
     parseRegisterTranscript: parseRegisterTranscript,
     playStartBeep: playStartBeep,
     playEndBeep: playEndBeep,
+    playSuccessBeep: playSuccessBeep,
   };
 })(typeof window !== "undefined" ? window : globalThis);
