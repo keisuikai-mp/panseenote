@@ -4462,6 +4462,7 @@
     warnOfflineVoiceUsage();
     trace.mark("recognizeOnce_call");
     return voice.recognizeOnce({ trace: trace, timeoutMs: timeoutMs }).then(function (text) {
+      var normalizedText = norm(text);
       trace.mark("onVoiceSearch_recognize_resolved", {
         empty: !String(text || "").trim(),
       });
@@ -4480,11 +4481,11 @@
             kind: "search",
             kindLabel: "音声検索",
             processedLabel: "正規化後",
-            processedSummary: norm(text) || "（空欄）",
+            processedSummary: normalizedText || "（空欄）",
           });
       }
-      $("#manual-search").value = text;
-      state.searchQuery = text;
+      $("#manual-search").value = normalizedText;
+      state.searchQuery = normalizedText;
       state.homeSearchQuery = state.searchQuery;
       var countPromise = String(state.searchQuery || "").trim()
         ? incrementSearchCount()
