@@ -168,7 +168,14 @@
           reject(makeRecognitionError("aborted"));
           return;
         }
-        finish(bestText);
+        if (bestText) {
+          finish(bestText);
+          return;
+        }
+        if (settled) return;
+        settled = true;
+        cleanup();
+        reject(makeRecognitionError(code));
       };
       rec.onstart = function () {
         traceMark(trace, "recognition_onstart");

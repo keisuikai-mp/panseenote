@@ -2120,6 +2120,26 @@
     return "音声認識がタイムアウト（" + getSpeechTimeoutSecondsLabel() + "）しました。" + String(suffix || "");
   }
 
+  function isWindowsEdgeBrowser() {
+    var ua = String((navigator && navigator.userAgent) || "");
+    return /Windows NT/i.test(ua) && /Edg\//.test(ua) && !/Android/i.test(ua);
+  }
+
+  function buildSpeechFailureMessage(err, suffix) {
+    var code = err && err.code ? String(err.code) : "";
+    var tail = String(suffix || "");
+    if (code === "not-allowed" || code === "service-not-allowed") {
+      return "マイクまたは音声認識の許可が無効です。ブラウザ設定をご確認ください。" + tail;
+    }
+    if (code === "language-not-supported") {
+      return "このブラウザでは日本語の音声認識に対応していない可能性があります。" + tail;
+    }
+    if (isWindowsEdgeBrowser() && (code === "network" || code === "language-not-supported" || code === "error" || code === "service-not-allowed")) {
+      return "Windows版Edgeでは音声認識が不安定または利用不可の場合があります。Chromeの利用をご検討ください。" + tail;
+    }
+    return buildSpeechTimeoutMessage(tail);
+  }
+
   function enterManualRegisterMode(metaMsg) {
     return enterVoiceRegisterResultMode({
       draft: buildEmptyVoiceRegisterDraft(),
@@ -4506,7 +4526,22 @@
       if (err && (err.code === "replaced" || err.code === "aborted")) {
         return;
       }
-      throw err;
+      resetVoiceRegisterState();
+      state.searchQuery = "";
+      state.homeSearchQuery = "";
+      if ($("#manual-search")) $("#manual-search").value = "";
+      state.voiceSearchMsg = buildSpeechFailureMessage(err, "手動検索も利用可能です。");
+      pushVoiceRecentLog("", null, "失敗", appendVoiceTimingNote(state.voiceSearchMsg, trace), {
+        kind: "search",
+        kindLabel: "音声検索",
+        processedLabel: "正規化後",
+        processedSummary: "（空欄）",
+      });
+      return saveSearchQueryToSettings("").then(function () {
+        return renderTable({ refreshSearchResults: true });
+      }).then(function () {
+        toast(state.voiceSearchMsg);
+      });
     });
   }
 
@@ -4592,7 +4627,9 @@
       if (err && (err.code === "replaced" || err.code === "aborted")) {
         return;
       }
-      return enterManualRegisterMode(buildSpeechTimeoutMessage("手動で登録ができます。"));
+      var failMsg = buildSpeechFailureMessage(err, "手動で登録ができます。");
+      pushVoiceRecentLog("", null, "失敗", appendVoiceTimingNote(failMsg, trace));
+      return enterManualRegisterMode(failMsg);
     });
   }
 
