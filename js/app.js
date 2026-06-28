@@ -3458,6 +3458,15 @@
     }
   }
 
+  function isSpeechNoBeepRequested() {
+    try {
+      var params = new URLSearchParams(window.location.search || "");
+      return params.get("speechNoBeep") === "1";
+    } catch (_) {
+      return false;
+    }
+  }
+
   function replaceDemoEntryUrlWithNormalUrl() {
     if (!isDemoQueryRequested()) return;
     if (!window.history || typeof window.history.replaceState !== "function") return;
@@ -4490,7 +4499,9 @@
     }
     trace.mark("speech_support_checked", { code: "supported" });
     warnOfflineVoiceUsage();
-    if (voice && typeof voice.playStartBeep === "function") {
+    if (isSpeechNoBeepRequested()) {
+      trace.mark("search_start_beep_suppressed", { reason: "speechNoBeep" });
+    } else if (voice && typeof voice.playStartBeep === "function") {
       trace.mark("search_start_beep_played");
       voice.playStartBeep();
     }
@@ -4601,7 +4612,9 @@
       });
     }
 
-    if (voice && typeof voice.playStartBeep === "function") {
+    if (isSpeechNoBeepRequested()) {
+      trace.mark("register_start_beep_suppressed", { reason: "speechNoBeep" });
+    } else if (voice && typeof voice.playStartBeep === "function") {
       trace.mark("register_start_beep_played");
       voice.playStartBeep();
     }
