@@ -3467,6 +3467,15 @@
     }
   }
 
+  function isSpeechNoSuccessBeepRequested() {
+    try {
+      var params = new URLSearchParams(window.location.search || "");
+      return params.get("speechNoSuccessBeep") === "1";
+    } catch (_) {
+      return false;
+    }
+  }
+
   function replaceDemoEntryUrlWithNormalUrl() {
     if (!isDemoQueryRequested()) return;
     if (!window.history || typeof window.history.replaceState !== "function") return;
@@ -4529,7 +4538,9 @@
             processedLabel: "正規化後",
             processedSummary: normalizedText || "（空欄）",
           });
-          if (voice && typeof voice.playSuccessBeep === "function") {
+          if (isSpeechNoSuccessBeepRequested()) {
+            trace.mark("search_success_beep_suppressed", { reason: "speechNoSuccessBeep" });
+          } else if (voice && typeof voice.playSuccessBeep === "function") {
             voice.playSuccessBeep();
           }
       }
@@ -4642,7 +4653,9 @@
         "「" + registeredTitleLabel + "」が登録されました。";
 
       pushVoiceRecentLog(text, parsed, "成功", appendVoiceTimingNote(registerNote, trace));
-      if (voice && typeof voice.playSuccessBeep === "function") {
+      if (isSpeechNoSuccessBeepRequested()) {
+        trace.mark("register_success_beep_suppressed", { reason: "speechNoSuccessBeep" });
+      } else if (voice && typeof voice.playSuccessBeep === "function") {
         voice.playSuccessBeep();
       }
       var entry = db.buildNewEntry(registeredTitle, registeredBook, registeredPage, "");
