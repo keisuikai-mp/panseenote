@@ -2126,6 +2126,15 @@
     return /Windows NT/i.test(ua) && /Edg\//.test(ua) && !/Android/i.test(ua);
   }
 
+  function isAppleFamilyDevice() {
+    var ua = String((navigator && navigator.userAgent) || "");
+    var platform = String((navigator && navigator.platform) || "");
+    var maxTouchPoints = Number((navigator && navigator.maxTouchPoints) || 0);
+    if (/iPhone|iPad|iPod/i.test(ua)) return true;
+    if (platform === "MacIntel" && maxTouchPoints > 1) return true;
+    return /Macintosh|Mac OS X/i.test(ua) || /Mac/i.test(platform);
+  }
+
   function buildSpeechFailureMessage(err, suffix) {
     var code = err && err.code ? String(err.code) : "";
     var tail = String(suffix || "");
@@ -3458,24 +3467,6 @@
     }
   }
 
-  function isSpeechNoBeepRequested() {
-    try {
-      var params = new URLSearchParams(window.location.search || "");
-      return params.get("speechNoBeep") === "1";
-    } catch (_) {
-      return false;
-    }
-  }
-
-  function isSpeechNoSuccessBeepRequested() {
-    try {
-      var params = new URLSearchParams(window.location.search || "");
-      return params.get("speechNoSuccessBeep") === "1";
-    } catch (_) {
-      return false;
-    }
-  }
-
   function replaceDemoEntryUrlWithNormalUrl() {
     if (!isDemoQueryRequested()) return;
     if (!window.history || typeof window.history.replaceState !== "function") return;
@@ -4508,9 +4499,7 @@
     }
     trace.mark("speech_support_checked", { code: "supported" });
     warnOfflineVoiceUsage();
-    if (isSpeechNoBeepRequested()) {
-      trace.mark("search_start_beep_suppressed", { reason: "speechNoBeep" });
-    } else if (voice && typeof voice.playStartBeep === "function") {
+    if (voice && typeof voice.playStartBeep === "function") {
       trace.mark("search_start_beep_played");
       voice.playStartBeep();
     }
@@ -4532,15 +4521,16 @@
           });
         state.voiceSearchMsg = buildSpeechTimeoutMessage("手動検索も利用可能です。");
         } else {
+          if (isAppleFamilyDevice()) {
+            trace.mark("search_success_beep_suppressed", { reason: "apple_family_device" });
+          }
           pushVoiceRecentLog(text, null, "成功", appendVoiceTimingNote("音声検索語を検索欄へ反映しました。", trace), {
             kind: "search",
             kindLabel: "音声検索",
             processedLabel: "正規化後",
             processedSummary: normalizedText || "（空欄）",
           });
-          if (isSpeechNoSuccessBeepRequested()) {
-            trace.mark("search_success_beep_suppressed", { reason: "speechNoSuccessBeep" });
-          } else if (voice && typeof voice.playSuccessBeep === "function") {
+          if (!isAppleFamilyDevice() && voice && typeof voice.playSuccessBeep === "function") {
             voice.playSuccessBeep();
           }
       }
@@ -4623,9 +4613,7 @@
       });
     }
 
-    if (isSpeechNoBeepRequested()) {
-      trace.mark("register_start_beep_suppressed", { reason: "speechNoBeep" });
-    } else if (voice && typeof voice.playStartBeep === "function") {
+    if (voice && typeof voice.playStartBeep === "function") {
       trace.mark("register_start_beep_played");
       voice.playStartBeep();
     }
@@ -4652,10 +4640,11 @@
       var registerMetaMsg =
         "「" + registeredTitleLabel + "」が登録されました。";
 
+      if (isAppleFamilyDevice()) {
+        trace.mark("register_success_beep_suppressed", { reason: "apple_family_device" });
+      }
       pushVoiceRecentLog(text, parsed, "成功", appendVoiceTimingNote(registerNote, trace));
-      if (isSpeechNoSuccessBeepRequested()) {
-        trace.mark("register_success_beep_suppressed", { reason: "speechNoSuccessBeep" });
-      } else if (voice && typeof voice.playSuccessBeep === "function") {
+      if (!isAppleFamilyDevice() && voice && typeof voice.playSuccessBeep === "function") {
         voice.playSuccessBeep();
       }
       var entry = db.buildNewEntry(registeredTitle, registeredBook, registeredPage, "");
